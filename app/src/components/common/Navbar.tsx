@@ -26,7 +26,7 @@ export default function Navbar() {
     if (!user) return '/login';
     switch (user.role) {
       case 'admin':
-        return '/admin';
+        return '/overview';
       case 'customer':
         return '/customer';
       case 'team':
