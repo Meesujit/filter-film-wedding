@@ -226,3 +226,5 @@ export const getPackageById = (id: string): Package | undefined => { return pack
 export const getBookingsByUserId = (userId: string): Booking[] => { return bookings.filter(booking => booking.userId === userId); }; 
 // Get bookings assigned to team member 
 export const getBookingsByTeamId = (teamId: string): Booking[] => { return bookings.filter(booking => booking.assignedTeam?.includes(teamId)); };
+
+
