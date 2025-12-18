@@ -5,6 +5,8 @@ import { DataProvider } from "./src/context/DataContext";
 import { AuthProvider } from "./src/context/AuthContext";
 import Navbar from "./src/components/common/Navbar";
 import Footer from "./src/components/common/Footer";
+import { SessionProvider } from "next-auth/react";
+import { auth } from "./auth";
 
 
 const playfair = Playfair_Display({
@@ -25,23 +27,26 @@ export const metadata: Metadata = {
   description: "India's premier wedding photography & cinematography studio",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   return (
     <html lang="en">
       <body
         className={`${playfair.variable} ${cormorant.variable} antialiased`}
       >
-        <AuthProvider>
-          <DataProvider>
-            <Navbar/>
-            {children}
-            <Footer />
-          </DataProvider>
-        </AuthProvider>
+        <SessionProvider session={session}>
+          <AuthProvider>
+            <DataProvider>
+              <Navbar />
+              {children}
+              <Footer />
+            </DataProvider>
+          </AuthProvider>
+        </SessionProvider>
       </body>
     </html>
   );

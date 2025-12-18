@@ -1,29 +1,39 @@
+import { auth } from "@/app/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
-  const token = req.cookies.get("auth-token")?.value;
-  const role = req.cookies.get("role")?.value;
+export default auth((req) => {
+  const { pathname } = req.nextUrl;
+  const session = req.auth;
 
-  const pathname = req.nextUrl.pathname;
-
-  if (!token && pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // Public routes
+  const publicRoutes = ["/", "/signin", "/error"];
+  
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.next();
   }
 
-  if (pathname.startsWith("/admin") && role !== "admin") {
-    return NextResponse.redirect(new URL("/", req.url));
+  // Redirect to sign-in if not authenticated
+  if (!session) {
+    const signInUrl = new URL("/signin", req.url);
+    signInUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(signInUrl);
   }
 
-  if (pathname.startsWith("/customer") && role !== "customer") {
-    return NextResponse.redirect(new URL("/", req.url));
+  const userRole = session.user.role;
+
+  // Admin-only routes
+  if (pathname.startsWith("/admin") && userRole !== "admin") {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (pathname.startsWith("/team") && role !== "team") {
-    return NextResponse.redirect(new URL("/", req.url));
+  // Team routes (admin and team can access)
+  if (pathname.startsWith("/team") && !["admin", "team"].includes(userRole)) {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
-}
+
+  return NextResponse.next();
+});
 
 export const config = {
-  matcher: ["/admin/:path*", "/customer/:path*", "/team/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

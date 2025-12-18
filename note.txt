@@ -1,0 +1,30 @@
+npx tsx scripts/exchange-code-for-tokens.ts "4/0ATX87lO02hiIsKhWEAh4kSOvRiHnFN4Er8ctPensa236olf3oxQuCjMx8U7jGPGs5byZPA"
+
+
+
+
+
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAOMHAnpBbyjhQ36l2u2sr-dvlhjX9Nq-o",
+  authDomain: "filter-film-auth.firebaseapp.com",
+  projectId: "filter-film-auth",
+  storageBucket: "filter-film-auth.firebasestorage.app",
+  messagingSenderId: "1057108036080",
+  appId: "1:1057108036080:web:c7fee4a71f1da84c317535",
+  measurementId: "G-3N6FL2V7TE"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+npm install firebase

@@ -2,11 +2,10 @@
 import { useState } from 'react';
 import { Menu, X, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
+import { useSession, signOut } from 'next-auth/react'; // Import from next-auth
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { cn } from '../../lib/utils';
-
+import { cn } from '@/app/lib/utils';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -20,20 +19,27 @@ const navLinks = [
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { data: session, status } = useSession(); // Use NextAuth session
+
+  const isAuthenticated = status === 'authenticated';
+  const user = session?.user;
 
   const getDashboardLink = () => {
-    if (!user) return '/login';
+    if (!user?.role) return '/signin';
     switch (user.role) {
       case 'admin':
-        return '/overview';
-      case 'customer':
-        return '/customer';
+        return '/admin/dashboard';
       case 'team':
-        return '/team-dashboard';
+        return '/team/dashboard';
+      case 'customer':
+        return '/customer/dashboard';
       default:
-        return '/login';
+        return '/signin';
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/' });
   };
 
   return (
@@ -51,7 +57,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Deskhrefp Navigation */}
+          {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
@@ -71,7 +77,9 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
-            {isAuthenticated ? (
+            {status === 'loading' ? (
+              <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />
+            ) : isAuthenticated ? (
               <>
                 <Link href={getDashboardLink()}>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -79,12 +87,12 @@ export default function Navbar() {
                     Dashboard
                   </Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={logout}>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
                   Logout
                 </Button>
               </>
             ) : (
-              <Link href="/login">
+              <Link href="/signin">
                 <Button variant="outline" size="sm" className="gap-2">
                   <User className="w-4 h-4" />
                   Login
@@ -128,7 +136,9 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 mt-4 px-4">
-                {isAuthenticated ? (
+                {status === 'loading' ? (
+                  <div className="h-10 bg-muted animate-pulse rounded-md" />
+                ) : isAuthenticated ? (
                   <>
                     <Link href={getDashboardLink()} onClick={() => setIsOpen(false)}>
                       <Button variant="outline" className="w-full gap-2">
@@ -136,12 +146,19 @@ export default function Navbar() {
                         Dashboard
                       </Button>
                     </Link>
-                    <Button variant="ghost" onClick={() => { logout(); setIsOpen(false); }}>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => { 
+                        handleLogout(); 
+                        setIsOpen(false); 
+                      }}
+                      className="w-full"
+                    >
                       Logout
                     </Button>
                   </>
                 ) : (
-                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                  <Link href="/signin" onClick={() => setIsOpen(false)}>
                     <Button variant="outline" className="w-full gap-2">
                       <User className="w-4 h-4" />
                       Login
@@ -158,5 +175,4 @@ export default function Navbar() {
       </nav>
     </header>
   );
-};
-
+}

@@ -1,60 +1,65 @@
-'use client';
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, users, credentials } from '../../data/mockData';
+"use client";
+
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useMemo,
+} from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+
+type Role = "admin" | "customer" | "team";
 
 interface AuthContextType {
-  user: User | null;
+  user: any | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
+  signin: () => void;
   logout: () => void;
   isAdmin: boolean;
   isCustomer: boolean;
   isTeam: boolean;
+  role: Role | null;
+  status: "loading" | "authenticated" | "unauthenticated";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const { data: session, status } = useSession();
+  const user = session?.user ?? null;
 
-  const login = useCallback((email: string, password: string) => {
-    // Check credentials against mock data
-    const credentialEntries = Object.entries(credentials);
-    
-    for (const [role, creds] of credentialEntries) {
-      if (creds.email === email && creds.password === password) {
-        const foundUser = users.find(u => u.email === email);
-        if (foundUser) {
-          setUser(foundUser);
-          return { success: true };
-        }
-      }
-    }
-    
-    return { success: false, error: 'Invalid email or password' };
-  }, []);
+  const value = useMemo<AuthContextType>(() => {
+    const role = (user?.role as Role) ?? null;
 
-  const logout = useCallback(() => {
-    setUser(null);
-  }, []);
+    return {
+      user,
+      status,
+      isAuthenticated: !!user,
+      role,
 
-  const value: AuthContextType = {
-    user,
-    isAuthenticated: !!user,
-    login,
-    logout,
-    isAdmin: user?.role === 'admin',
-    isCustomer: user?.role === 'customer',
-    isTeam: user?.role === 'team',
-  };
+      isAdmin: role === "admin",
+      isCustomer: role === "customer",
+      isTeam: role === "team",
+
+      signin: () => {
+        signIn("google", {
+          callbackUrl: "/signin", // role-based redirect handled elsewhere
+        });
+      },
+
+      logout: () => {
+        signOut({ callbackUrl: "/" });
+      },
+    };
+  }, [user, status]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
