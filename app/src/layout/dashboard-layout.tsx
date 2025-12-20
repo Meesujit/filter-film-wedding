@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Menu, X, Home, Package, Calendar, Image, Users, Settings, LogOut, User, CreditCard, Upload, ChevronRight, FileText } from 'lucide-react';
+import { Menu, X, Home, Package, Calendar, Image, Users, Settings, LogOut, User, CreditCard, Upload, ChevronRight, Loader2, CircleArrowOutUpLeft, CircleArrowOutUpLeftIcon } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ const navigationConfig = {
     { href: '/admin/bookings', label: 'Manage Bookings', icon: Calendar },
     { href: '/admin/gallery', label: 'Manage Gallery', icon: Image },
     { href: '/admin/team', label: 'Manage Team', icon: Users },
+    { href: '/admin/profile', label: 'Profile', icon: User },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ],
   customer: [
@@ -24,9 +25,9 @@ const navigationConfig = {
   ],
   team: [
     { href: '/team/dashboard', label: 'Dashboard', icon: Home },
-    { href: '/team/bookings', label: 'My Assignments', icon: Calendar },
-    { href: '/team/deliverables', label: 'Deliverables', icon: Upload },
-    { href: '/team/reports', label: 'Reports', icon: FileText },
+    { href: '/team/assignments', label: 'My Assignments', icon: Calendar },
+    // { href: '/team/deliverables', label: 'Deliverables', icon: Upload },
+    // { href: '/team/reports', label: 'Reports', icon: FileText },
     { href: '/team/profile', label: 'Profile', icon: User },
   ]
 };
@@ -77,7 +78,7 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
         </div>
       </div>
     );
@@ -100,133 +101,128 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-50 bg-white border-b border-gray-200 px-4 h-16 flex items-center justify-between shadow-sm">
-        <button 
-          onClick={() => setSidebarOpen(true)} 
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          aria-label="Open menu"
-        >
-          <Menu className="w-6 h-6 text-gray-700" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full ${config.primaryClass} flex items-center justify-center`}>
-            <span className="font-bold text-sm text-white">R</span>
-          </div>
-          <span className="font-semibold text-gray-900">{config.title}</span>
-        </div>
-        <div className="w-10" />
-      </header>
-
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 lg:translate-x-0 lg:static shadow-lg ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+    <div className="h-screen flex overflow-hidden bg-gradient-elegant">
+      {/* Sidebar - Desktop & Mobile */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 lg:translate-x-0 lg:static flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-          {/* Sidebar Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-            <Link href="/" className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full ${config.primaryClass} flex items-center justify-center`}>
-                <span className="font-bold text-lg text-white">R</span>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900">Royal Weddings</p>
-                <p className="text-xs text-gray-500">{config.title}</p>
-              </div>
-            </Link>
-            <button 
-              onClick={() => setSidebarOpen(false)} 
-              className="lg:hidden p-2 hover:bg-gray-100 rounded transition-colors"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
 
-          {/* User Info */}
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center gap-3">
-              {user.image ? (
-                <img
-                  src={user.image}
-                  alt={user.name || 'User avatar'}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                />
-              ) : (
-                <div className={`w-10 h-10 rounded-full ${config.primaryClass} flex items-center justify-center border-2 border-white shadow-sm`}>
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">
-                  {user.name || user.email}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{user.email}</p>
-              </div>
+        {/* Sidebar Header - Fixed height */}
+        <div className="h-16 flex items-center justify-between px-4 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0`}>
+              <span className="font-heading text-lg font-bold text-primary-foreground">F</span>
             </div>
-            <div className="mt-3">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${config.bgClass} ${config.textClass}`}>
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </span>
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-gray-900 truncate">Filter Film Studio</p>
+              <p className="text-sm font-bold text-gray-500 truncate">{config.title}</p>
             </div>
           </div>
-
-          {/* Navigation */}
-          <nav className="p-4 space-y-1 flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 240px)' }}>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1.5 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+        {/* Navigation - Scrollable middle section */}
+        <nav className="flex-1 overflow-hidden p-3">
+          <div className="space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.href}
                   href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? `${config.primaryClass} text-white shadow-sm`
-                      : `text-gray-700 ${config.hoverClass}`
-                  }`}
+                  key={item.label}
+                  onClick={() => {
+                    console.log('Navigate to:', item.href);
+                    setSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
+                      ? `bg-primary text-primary-foreground`
+                      : `text-muted-foreground hover:bg-muted hover:text-foreground`
+                    }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {isActive && <ChevronRight className="w-4 h-4" />}
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="flex-1 text-left truncate font-bold text-base">{item.label}</span>
+                  {isActive && <ChevronRight className="w-4 h-4 flex-shrink-0" />}
                 </Link>
               );
             })}
-          </nav>
-
-          {/* Sidebar Footer */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-            <Link
-              href="/"
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg mb-2 transition-colors"
-            >
-              <Home className="w-5 h-5" />
-              Back to Website
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-            >
-              <LogOut className="w-5 h-5" />
-              Sign Out
-            </button>
           </div>
-        </aside>
+        </nav>
 
-        {/* Overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        {/* Sidebar Footer - Fixed height */}
+        <div className="p-3 border-t border-gray-200 bg-card flex-shrink-0">
+          <button
+            onClick={() => console.log('Back to website')}
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg mb-2 transition-colors"
+          >
+            <CircleArrowOutUpLeftIcon className="w-5 h-5 flex-shrink-0" />
+            <Link href="/" className="truncate">Back to Website</Link>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">Sign Out</span>
+          </button>
+        </div>
+      </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 min-h-screen">
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Mobile Header - Fixed height */}
+        <header className="lg:hidden h-16 bg-card border-b border-border px-4 flex items-center justify-between shadow-sm flex-shrink-0">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6 text-gray-700" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-full ${config.primaryClass} flex items-center justify-center`}>
+              <span className="font-bold text-sm text-white">R</span>
+            </div>
+            <span className="font-semibold text-gray-900">{config.title}</span>
+          </div>
+          <div className="w-10" />
+        </header>
+
+        {/* Main Content - Scrollable */}
+        <main className="flex-1 overflow-y-auto">
           <div className="p-6 lg:p-8">
-            {children}
+            {children || (
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">Welcome to {config.title}</h1>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                    <h3 className="font-semibold text-gray-900 mb-2">Dashboard Content</h3>
+                    <p className="text-gray-600 text-sm">Your content goes here</p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                    <h3 className="font-semibold text-gray-900 mb-2">Statistics</h3>
+                    <p className="text-gray-600 text-sm">View your analytics</p>
+                  </div>
+                  <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                    <h3 className="font-semibold text-gray-900 mb-2">Quick Actions</h3>
+                    <p className="text-gray-600 text-sm">Perform common tasks</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>

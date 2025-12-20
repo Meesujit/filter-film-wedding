@@ -328,7 +328,6 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                                             <Image
                                                 src={formData.photo}
                                                 alt="Preview"
-                                                fill
                                                 className="object-cover"
                                                 width={100}
                                                 height={100}
@@ -362,13 +361,20 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Role *</label>
-                                    <input
+                                    <select
                                         required
                                         value={formData.role}
-                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, role: e.target.value })
+                                        }
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Lead Photographer"
-                                    />
+                                    >
+                                        <option value="" disabled>
+                                            Select role
+                                        </option>
+                                        <option value="customer">Customer</option>
+                                        <option value="team">Team</option>
+                                    </select>
                                 </div>
                             </div>
 
