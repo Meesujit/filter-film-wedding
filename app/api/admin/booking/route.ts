@@ -1,4 +1,4 @@
-// /api/bookings/route.ts
+// /api/admin/booking/route.ts
 import { auth } from "@/app/auth";
 import { bookingService } from "@/app/lib/services/booking-service";
 import { NextResponse } from "next/server";
@@ -20,11 +20,9 @@ export async function GET() {
         else if (session.user.role === "customer") {
             bookings = await bookingService.getBookingsByUserId(session.user.id);
         }
-        // Team members can see all bookings (or filter by assigned if needed)
+        // Team members can ONLY see bookings assigned to them
         else if (session.user.role === "team") {
-            bookings = await bookingService.getAllBookings();
-            // Optional: Filter by assigned team
-            // bookings = await bookingService.getBookingsByAssignedTeam(session.user.id);
+            bookings = await bookingService.getBookingsByAssignedTeam(session.user.id);
         }
         else {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -63,19 +61,19 @@ export async function POST(req: Request) {
             );
         }
         
-        // Create new booking with userId automatically set
+        // Create new booking - NO assignedTeam during creation
         const newBooking = await bookingService.createBooking({
-            userId: session.user.id, // Automatically use logged-in user's ID
+            userId: session.user.id,
             packageId: data.packageId,
             eventType: data.eventType,
             eventName: data.eventName,
             date: data.date,
             venue: data.venue,
-            status: data.status || 'pending', // Default to pending
+            status: 'pending', // Always pending for new bookings
             totalAmount: data.totalAmount,
-            paidAmount: data.paidAmount || 0, // Default to 0 if not provided
+            paidAmount: data.paidAmount || 0,
             notes: data.notes || '',
-            assignedTeam: data.assignedTeam || [],
+            assignedTeam: [], // Always empty - admin assigns later
         });
         
         return NextResponse.json({ booking: newBooking }, { status: 201 });

@@ -3,10 +3,9 @@ import { Playfair_Display, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { DataProvider } from "./src/context/DataContext";
 import { AuthProvider } from "./src/context/AuthContext";
-import Navbar from "./src/components/common/Navbar";
-import Footer from "./src/components/common/Footer";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "./auth";
+import LayoutWrapper from "./src/components/layout-wrapper";
 
 
 const playfair = Playfair_Display({
@@ -41,9 +40,9 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <AuthProvider>
             <DataProvider>
-              <Navbar />
-              {children}
-              <Footer />
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
             </DataProvider>
           </AuthProvider>
         </SessionProvider>

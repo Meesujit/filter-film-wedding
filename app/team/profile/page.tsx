@@ -19,7 +19,6 @@ const CustomerProfile: React.FC = () => {
         body: JSON.stringify({
           name: user?.name,
           email: user?.email,
-          phone: user?.phone,
         }),
       });
       if (response.ok) {
@@ -52,7 +51,6 @@ const CustomerProfile: React.FC = () => {
         <div className="space-y-4">
           <div><label className="block text-sm font-medium mb-1">Full Name</label><Input defaultValue={user?.name} /></div>
           <div><label className="block text-sm font-medium mb-1">Email</label><Input defaultValue={user?.email} type="email" /></div>
-          <div><label className="block text-sm font-medium mb-1">Phone</label><Input defaultValue={user?.phone} /></div>
           <Button variant="royal" onClick={handleSave}>Save Changes</Button>
         </div>
       </div>

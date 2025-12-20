@@ -24,6 +24,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingField, setUploadingField] = useState<'url' | 'thumbnail' | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     type: 'photo' as 'photo' | 'video',
     url: '',
@@ -67,6 +68,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
       setIsFetching(false);
     }
   };
+
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'url' | 'thumbnail') => {
     const file = e.target.files?.[0];
@@ -219,7 +221,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
 
       {/* Gallery Grid */}
       {isFetching ? (
-        <div className="bg-card rounded-xl shadow-card p-8 text-center">
+        <div className="bg-card rounded-xl shadow-card p-8 text-center h-72 flex flex-col items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-muted-foreground" />
           <p className="text-muted-foreground">Loading gallery...</p>
         </div>

@@ -2,18 +2,15 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, X, Upload, Loader2 } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
-import { Button } from '@/app/src/components/ui/button';
-import { Input } from '@/app/src/components/ui/input';
-import { Textarea } from '@/app/src/components/ui/textarea';
-import { Package } from '@/app/types/package';
 import Image from 'next/image';
+import { Button } from '@/app/src/components/ui/button';
+import { Package } from '@/app/types/package';
 
 interface Props {
     initialPackages?: Package[];
 }
 
-export default function Page({ initialPackages }: Props) {
+export default function PackageManagement({ initialPackages }: Props) {
     const router = useRouter();
     const [packages, setPackages] = useState<Package[]>(initialPackages || []);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +18,6 @@ export default function Page({ initialPackages }: Props) {
     const [loading, setLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isFetchingPackages, setIsFetchingPackages] = useState(false);
-    const { toast } = useToast();
     const [formData, setFormData] = useState({
         name: '',
         price: '',
@@ -44,26 +40,18 @@ export default function Page({ initialPackages }: Props) {
         try {
             const response = await fetch('/api/admin/package');
             const data = await response.json();
-            
+
             console.log('Fetched packages response:', data);
-            
+
             if (response.ok && data.packages) {
                 setPackages(Array.isArray(data.packages) ? data.packages : []);
             } else {
                 console.error('Failed to fetch packages:', data);
-                toast({
-                    title: 'Error',
-                    description: 'Failed to load packages',
-                    variant: 'destructive'
-                });
+                alert('Failed to load packages');
             }
         } catch (error) {
             console.error('Error fetching packages:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to load packages',
-                variant: 'destructive'
-            });
+            alert('Failed to load packages');
         } finally {
             setIsFetchingPackages(false);
         }
@@ -117,24 +105,13 @@ export default function Page({ initialPackages }: Props) {
             if (response.ok) {
                 const { url } = await response.json();
                 setFormData(prev => ({ ...prev, preview: url }));
-                toast({
-                    title: 'Image Uploaded',
-                    description: 'Preview image uploaded successfully.'
-                });
+                alert('Image uploaded successfully');
             } else {
-                toast({
-                    title: 'Upload Failed',
-                    description: 'Failed to upload image',
-                    variant: 'destructive'
-                });
+                alert('Failed to upload image');
             }
         } catch (error) {
             console.error('Upload error:', error);
-            toast({
-                title: 'Error',
-                description: 'Error uploading image',
-                variant: 'destructive'
-            });
+            alert('Error uploading image');
         } finally {
             setIsUploading(false);
         }
@@ -167,16 +144,9 @@ export default function Page({ initialPackages }: Props) {
 
                 if (response.ok) {
                     setPackages(prev => prev.map(p => p.id === editingId ? result.package : p));
-                    toast({
-                        title: 'Package Updated',
-                        description: 'The package has been updated successfully.'
-                    });
+                    alert('Package updated successfully');
                 } else {
-                    toast({
-                        title: 'Error',
-                        description: result.error || 'Failed to update package',
-                        variant: 'destructive'
-                    });
+                    alert(result.error || 'Failed to update package');
                     setLoading(false);
                     return;
                 }
@@ -192,16 +162,9 @@ export default function Page({ initialPackages }: Props) {
 
                 if (response.ok) {
                     setPackages(prev => [...prev, result.package]);
-                    toast({
-                        title: 'Package Created',
-                        description: 'The new package has been created successfully.'
-                    });
+                    alert('Package created successfully');
                 } else {
-                    toast({
-                        title: 'Error',
-                        description: result.error || 'Failed to create package',
-                        variant: 'destructive'
-                    });
+                    alert(result.error || 'Failed to create package');
                     setLoading(false);
                     return;
                 }
@@ -212,11 +175,7 @@ export default function Page({ initialPackages }: Props) {
             router.refresh();
         } catch (error) {
             console.error('Submit error:', error);
-            toast({
-                title: 'Error',
-                description: 'An unexpected error occurred',
-                variant: 'destructive'
-            });
+            alert('An unexpected error occurred');
         } finally {
             setLoading(false);
         }
@@ -232,26 +191,15 @@ export default function Page({ initialPackages }: Props) {
 
             if (response.ok) {
                 setPackages(prev => prev.filter(p => p.id !== id));
-                toast({
-                    title: 'Package Deleted',
-                    description: 'The package has been removed.'
-                });
+                alert('Package deleted successfully');
                 router.refresh();
             } else {
                 const result = await response.json();
-                toast({
-                    title: 'Error',
-                    description: result.error || 'Failed to delete package',
-                    variant: 'destructive'
-                });
+                alert(result.error || 'Failed to delete package');
             }
         } catch (error) {
             console.error('Delete error:', error);
-            toast({
-                title: 'Error',
-                description: 'An unexpected error occurred',
-                variant: 'destructive'
-            });
+            alert('An unexpected error occurred');
         }
     };
 
@@ -264,11 +212,11 @@ export default function Page({ initialPackages }: Props) {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-0 flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="font-heading text-3xl font-bold text-foreground">Manage Packages</h1>
-                    <p className="text-muted-foreground">Create and manage your service packages.</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Manage Packages</h1>
+                    <p className="text-gray-600 mt-1">Create and manage your service packages.</p>
                 </div>
                 <Button variant="royal" onClick={() => openModal()}>
                     <Plus className="w-4 h-4" />
@@ -279,15 +227,15 @@ export default function Page({ initialPackages }: Props) {
             {/* Packages List */}
             <div className="grid gap-4">
                 {isFetchingPackages ? (
-                    <div className="bg-card rounded-xl shadow-card p-8 text-center">
+                    <div className="bg-card rounded-xl shadow-card p-8 text-center h-72 flex flex-col items-center justify-center">
                         <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-muted-foreground" />
                         <p className="text-muted-foreground">Loading packages...</p>
                     </div>
                 ) : packages.length === 0 ? (
-                    <div className="bg-card rounded-xl shadow-card p-8 text-center">
-                        <p className="text-muted-foreground mb-4">No packages found. Create your first package to get started.</p>
+                    <div className="p-8 text-center bg-card rounded-xl shadow-card h-72 flex flex-col items-center justify-center">
+                        <p className="text-gray-600 mb-4">No packages found. Create your first package to get started.</p>
                         <Button variant="royal" onClick={() => openModal()}>
-                            <Plus className="w-4 h-4 mr-2" />
+                            <Plus className="w-4 h-4" />
                             Create First Package
                         </Button>
                     </div>
@@ -311,7 +259,7 @@ export default function Page({ initialPackages }: Props) {
                                                     <span className="text-xs px-2 py-1 bg-gold text-maroon-dark rounded-full">Popular</span>
                                                 )}
                                             </h3>
-                                            <p className="text-gold font-bold">{formatPrice(pkg.price)}</p>
+                                            <p className="text-gold text-2xl font-bold">{formatPrice(pkg.price)}</p>
                                         </div>
                                         <div className="flex gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => openModal(pkg)}>
@@ -342,38 +290,53 @@ export default function Page({ initialPackages }: Props) {
                 )}
             </div>
 
-            {/* Modal */}
+            {/* Modal - FIXED POSITIONING */}
             {isModalOpen && (
-                <div className="fixed inset-4 z-50 flex items-center justify-center p-4 bg-foreground/50">
-                    <div className="bg-card rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-elegant animate-scale-in">
-
-                        <div className="p-6 border-b border-border flex items-center justify-between">
-                            <h2 className="font-heading text-xl font-semibold">
-                                {editingId ? 'Edit Package' : 'Add New Package'}
-                            </h2>
-                            <button onClick={() => setIsModalOpen(false)}>
-                                <X className="w-5 h-5 text-muted-foreground" />
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-sm bg-black/50 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                        {/* Modal Header */}
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between rounded-t-2xl z-10">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                    {editingId ? 'Edit Package' : 'Create New Package'}
+                                </h2>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {editingId ? 'Update your package details' : 'Add a new service package to your offerings'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-6 h-6 text-gray-500" />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                            {/* Image Upload */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Preview Image</label>
-                                <div className="flex items-center gap-4">
+
+                        {/* Modal Form */}
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                            {/* Image Upload Section */}
+                            <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                                    Package Preview Image
+                                </label>
+                                <div className="flex items-center gap-6">
                                     {formData.preview && (
-                                        <div className="relative w-24 h-24 rounded-lg overflow-hidden">
+                                        <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-md border-2 border-blue-200">
                                             <Image
                                                 src={formData.preview}
                                                 alt="Preview"
                                                 className="w-full h-full object-cover"
-                                                width={100}
                                                 height={100}
+                                                width={100}
                                             />
                                         </div>
                                     )}
-                                    <label className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors">
-                                        <Upload className="w-4 h-4" />
-                                        {isUploading ? 'Uploading...' : 'Upload Image'}
+                                    <label className="flex-1 flex flex-col items-center gap-3 px-6 py-8 bg-white rounded-xl cursor-pointer hover:bg-blue-50 transition-all border-2 border-dashed border-blue-300 hover:border-blue-500">
+                                        <Upload className="w-8 h-8 text-blue-500" />
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {isUploading ? 'Uploading...' : 'Click to upload image'}
+                                        </span>
+                                        <span className="text-xs text-gray-500">PNG, JPG up to 5MB</span>
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -385,89 +348,115 @@ export default function Page({ initialPackages }: Props) {
                                 </div>
                             </div>
 
+                            {/* Package Name */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Package Name</label>
-                                <Input
+                                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    Package Name *
+                                </label>
+                                <input
                                     required
+                                    type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="Royal Heritage"
+                                    placeholder="e.g., Royal Heritage Package"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                                 />
                             </div>
+
+                            {/* Price and Duration */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Price (₹)</label>
-                                    <Input
+                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                        Price (₹) *
+                                    </label>
+                                    <input
                                         required
                                         type="number"
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                         placeholder="500000"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">Duration</label>
-                                    <Input
+                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                        Duration *
+                                    </label>
+                                    <input
                                         required
+                                        type="text"
                                         value={formData.duration}
                                         onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                                         placeholder="3 Days"
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                                     />
                                 </div>
                             </div>
+
+                            {/* Description */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Description</label>
-                                <Textarea
+                                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    Description *
+                                </label>
+                                <textarea
                                     required
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    placeholder="Package description..."
+                                    placeholder="Describe what makes this package special..."
                                     rows={3}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none"
                                 />
                             </div>
+
+                            {/* Deliverables */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Deliverables (one per line)</label>
-                                <Textarea
+                                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    Deliverables (one per line) *
+                                </label>
+                                <textarea
                                     required
                                     value={formData.deliverables}
                                     onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
-                                    placeholder="3 Days Full Coverage&#10;Cinematic Wedding Film&#10;500+ Edited Photos"
-                                    rows={4}
+                                    placeholder="3 Days Full Coverage&#10;Cinematic Wedding Film&#10;500+ Edited Photos&#10;Online Gallery"
+                                    rows={5}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all resize-none font-mono text-sm"
                                 />
                             </div>
-                            <label className="flex items-center gap-2 cursor-pointer">
+
+                            {/* Popular Checkbox */}
+                            <label className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors border border-blue-200">
                                 <input
                                     type="checkbox"
                                     checked={formData.popular}
                                     onChange={(e) => setFormData({ ...formData, popular: e.target.checked })}
-                                    className="w-4 h-4 rounded border-border"
+                                    className="w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-200"
                                 />
-                                <span className="text-sm">Mark as Popular</span>
+                                <div>
+                                    <span className="text-sm font-semibold text-gray-900">Mark as Popular</span>
+                                    <p className="text-xs text-gray-600">This package will be highlighted to customers</p>
+                                </div>
                             </label>
-                            <div className="flex gap-3 pt-4">
-                                <Button
+
+                            {/* Form Actions */}
+                            <div className="flex gap-4 pt-4">
+                                <button
                                     type="button"
-                                    variant="outline"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1"
                                     disabled={loading}
+                                    className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold disabled:opacity-50"
                                 >
                                     Cancel
-                                </Button>
-                                <Button
+                                </button>
+                                <button
                                     type="submit"
-                                    variant="royal"
-                                    className="flex-1"
                                     disabled={loading}
+                                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-semibold shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {loading && (
-                                        <span
-                                            className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                                            aria-hidden
-                                        />
+                                        <Loader2 className="w-5 h-5 animate-spin" />
                                     )}
-                                    {editingId ? 'Update' : 'Create'} Package
-                                </Button>
+                                    {editingId ? 'Update Package' : 'Create Package'}
+                                </button>
                             </div>
                         </form>
                     </div>

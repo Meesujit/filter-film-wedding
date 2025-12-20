@@ -7,7 +7,7 @@ import Image from 'next/image';
 import React from 'react';
 
 
-const CustomerProfile: React.FC = () => {
+const AdminProfile: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -52,7 +52,7 @@ const CustomerProfile: React.FC = () => {
         <div className="space-y-4">
           <div><label className="block text-sm font-medium mb-1">Full Name</label><Input defaultValue={user?.name} /></div>
           <div><label className="block text-sm font-medium mb-1">Email</label><Input defaultValue={user?.email} type="email" /></div>
-          <div><label className="block text-sm font-medium mb-1">Phone</label><Input defaultValue={user?.phone} /></div>
+          <div><label className="block text-sm font-medium mb-1">Role</label><Input defaultValue={user?.role} /></div>
           <Button variant="royal" onClick={handleSave}>Save Changes</Button>
         </div>
       </div>
@@ -60,4 +60,4 @@ const CustomerProfile: React.FC = () => {
   );
 };
 
-export default CustomerProfile;
+export default AdminProfile;
