@@ -2,7 +2,7 @@
 
 import { useToast } from "@/app/hooks/use-toast";
 import { Package } from "@/app/types/package";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, X, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/app/src/components/ui/button";
@@ -10,6 +10,7 @@ import { Button } from "@/app/src/components/ui/button";
 export default function CustomerPackagesPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,86 +44,158 @@ export default function CustomerPackagesPage() {
       maximumFractionDigits: 0,
     }).format(price);
 
-  if (fetchingPackages) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
   return (
     <section className="space-y-8 animate-fade-in">
-      <div className="text-center max-w-2xl mx-auto">
+      <div className="space-y-3">
         <h1 className="font-heading text-3xl font-bold text-foreground">
-          Our Packages
+          Wedding Packages
         </h1>
-        <p className="text-muted-foreground mt-2">
-          Browse and select from our range of packages tailored for your needs.
+        <p className="text-muted-foreground">
+          Click on any package to view full details
         </p>
       </div>
 
-      {packages.length === 0 ? (
-        <p className="text-center text-muted-foreground">
+      {fetchingPackages ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      ): packages.length === 0 ? (
+        <p className="text-center text-muted-foreground py-12">
           No packages available at the moment.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {packages.map((pkg) => (
-            <div
-              key={pkg.id}
-              className="bg-card rounded-2xl shadow-card overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              {/* Image */}
-              <div className="relative h-48">
-                <Image
-                  src={pkg.preview}
-                  alt={pkg.name}
-                  fill
-                  className="object-cover"
-                />
-                {pkg.popular && (
-                  <span className="absolute top-3 right-3 bg-gold text-maroon-dark text-xs font-semibold px-3 py-1 rounded-full">
-                    Popular
-                  </span>
-                )}
-              </div>
+        <>
+          {/* Package Grid - Small Cards */}
+          {!selectedPackage && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {packages.map((pkg) => (
+                <button
+                  key={pkg.id}
+                  onClick={() => setSelectedPackage(pkg)}
+                  className="bg-card border border-border rounded-lg overflow-hidden hover:border-primary hover:shadow-md transition-all group"
+                >
+                  {/* Image */}
+                  <div className="relative h-32">
+                    <Image
+                      src={pkg.preview}
+                      alt={pkg.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform"
+                    />
+                    {pkg.popular && (
+                      <span className="absolute top-2 right-2 bg-gold text-maroon-dark text-[10px] font-semibold px-2 py-0.5 rounded">
+                        Popular
+                      </span>
+                    )}
+                  </div>
 
-              {/* Content */}
-              <div className="p-6 space-y-4">
-                <div>
-                  <h3 className="font-heading text-xl font-semibold">
-                    {pkg.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {pkg.duration}
-                  </p>
+                  {/* Content */}
+                  <div className="p-3 space-y-1.5">
+                    <h3 className="font-semibold text-sm text-foreground line-clamp-1 text-left">
+                      {pkg.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground text-left">
+                      {pkg.duration}
+                    </p>
+                    <div className="text-base font-bold text-gold text-left">
+                      {formatPrice(pkg.price)}
+                    </div>
+                    <div className="flex items-center justify-end text-primary text-xs font-medium pt-1">
+                      View Details
+                      <ChevronRight className="w-3 h-3 ml-1" />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Package Details View */}
+          {selectedPackage && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Back Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedPackage(null)}
+                className="mb-4"
+              >
+                <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+                Back to Packages
+              </Button>
+
+              {/* Details Card */}
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="grid md:grid-cols-2 gap-0">
+                  {/* Image Section */}
+                  <div className="relative h-96 md:h-auto">
+                    <Image
+                      src={selectedPackage.preview}
+                      alt={selectedPackage.name}
+                      fill
+                      className="object-cover"
+                    />
+                    {selectedPackage.popular && (
+                      <span className="absolute top-4 left-4 bg-gold text-maroon-dark text-xs font-semibold px-3 py-1.5 rounded">
+                        Popular Choice
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Content Section */}
+                  <div className="p-8 space-y-6">
+                    <div>
+                      <h2 className="font-heading text-3xl font-bold text-foreground mb-2">
+                        {selectedPackage.name}
+                      </h2>
+                      <p className="text-muted-foreground">
+                        {selectedPackage.duration}
+                      </p>
+                    </div>
+
+                    <div className="text-4xl font-bold text-gold">
+                      {formatPrice(selectedPackage.price)}
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2">About This Package</h3>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {selectedPackage.description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-3">What's Included</h3>
+                      <div className="space-y-2.5">
+                        {selectedPackage.deliverables.map((item, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <Check className="w-3 h-3 text-primary" />
+                            </div>
+                            <span className="text-foreground">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button variant="royal" size="lg" className="flex-1">
+                        Book Now
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="lg"
+                        onClick={() => setSelectedPackage(null)}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-
-                <p className="text-gold text-2xl font-bold">
-                  {formatPrice(pkg.price)}
-                </p>
-
-                <p className="text-sm text-muted-foreground">
-                  {pkg.description}
-                </p>
-
-                <ul className="space-y-2">
-                  {pkg.deliverables.slice(0, 4).map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-primary mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button variant="royal" className="w-full mt-4">
-                  Book Now
-                </Button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </section>
   );

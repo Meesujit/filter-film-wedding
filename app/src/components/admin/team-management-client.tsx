@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Edit, Trash2, X, Instagram, Upload, Calendar, TrendingUp, Briefcase } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Instagram, Upload, Calendar, TrendingUp, Briefcase, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { User } from '@/app/types/user';
+import { Button } from '@/app/src/components/ui/button';
+
 
 interface Props {
     initialTeam: User[];
@@ -212,98 +214,95 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                 </button>
             </div>
 
-            {/* Team Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {team.map((member) => (
-                    <div
-                        key={member.id}
-                        className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-                    >
-                        <div className="relative h-48">
-                            <Image
-                                src={member.image || ''}
-                                alt={member.name || ''}
-                                fill
-                                className="object-cover"
-                            />
-                            <div className="absolute top-2 right-2 flex gap-1">
-                                <button
-                                    onClick={() => openModal(member)}
-                                    className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-                                >
-                                    <Edit className="w-4 h-4 text-blue-600" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(member.id)}
-                                    className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-                                >
-                                    <Trash2 className="w-4 h-4 text-red-600" />
-                                </button>
-                            </div>
-                            <div className="absolute bottom-2 left-2 px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-semibold rounded-full">
-                                {member.teamProfile?.experience}
-                            </div>
-                        </div>
+            <div className="overflow-x-auto bg-white rounded-xl shadow">
+                <table className="min-w-full border-collapse">
+                    <thead className="bg-gray-100 text-sm text-gray-700">
+                        <tr>
+                            <th className="p-3 text-left">Member</th>
+                            <th className="p-3">Role</th>
+                            <th className="p-3">Attendance</th>
+                            <th className="p-3">Progress</th>
+                            <th className="p-3">Assignments</th>
+                            <th className="p-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                        {loading ? (
+                            <tr>
+                                <td colSpan={6} className="h-72 text-center align-middle">
+                                    <div className="flex flex-col items-center justify-center h-full">
+                                        <Loader2 className="w-8 h-8 animate-spin mb-2 text-muted-foreground" />
+                                        <p className="text-muted-foreground">Loading gallery...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : team.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="p-8 text-center">
+                                    <p className="text-muted-foreground mb-4">
+                                        No team members found. Add your first member to get started.
+                                    </p>
+                                    <Button variant="royal" onClick={() => setIsModalOpen(true)}>
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Add First Member
+                                    </Button>
+                                </td>
+                            </tr>
+                        ) : (
+                            team.map(member => (
+                                <tr key={member.id} className="hover:bg-gray-50">
+                                    <td className="p-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                                                <Image
+                                                    src={member.image || ''}
+                                                    alt={member.name || ''}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold">{member.name}</p>
+                                                <p className="text-xs text-gray-500">{member.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
 
-                        <div className="p-4">
-                            <h3 className="font-bold text-lg text-gray-900">{member.email}</h3>
-                            <h3 className='font-bold text-sm text-gray-800'>{member.name || ''}</h3>
-                            <p className="text-yellow-600 text-sm font-medium">{member.role}</p>
-                            <p className="text-gray-600 text-sm mt-1">{member.teamProfile?.specialization || ''}</p>
+                                    <td className="p-3 text-center">{member.role}</td>
 
-                            {/* Stats */}
-                            <div className="mt-3 space-y-2">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="flex items-center gap-1 text-gray-600">
-                                        <Calendar className="w-3 h-3" />
-                                        Attendance
-                                    </span>
-                                    <span className="font-semibold text-green-600">
+                                    <td className="p-3 text-center text-green-600">
                                         {member.teamProfile?.attendance || '100%'}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="flex items-center gap-1 text-gray-600">
-                                        <TrendingUp className="w-3 h-3" />
-                                        Progress
-                                    </span>
-                                    <span className="font-semibold text-blue-600">
+                                    </td>
+
+                                    <td className="p-3 text-center text-blue-600">
                                         {member.teamProfile?.progress || '0%'}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="flex items-center gap-1 text-gray-600">
-                                        <Briefcase className="w-3 h-3" />
-                                        Assignments
-                                    </span>
-                                    <span className="font-semibold text-purple-600">
+                                    </td>
+
+                                    <td className="p-3 text-center text-purple-600">
                                         {member.teamProfile?.assignment?.length || 0}
-                                    </span>
-                                </div>
-                            </div>
+                                    </td>
 
-                            {member.teamProfile?.instagram && (
-                                <a
-                                    href={`https://instagram.com/${member.teamProfile.instagram.replace('@', '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 mt-3"
-                                >
-                                    <Instagram className="w-3 h-3" />
-                                    {member.teamProfile?.instagram}
-                                </a>
-                            )}
-
-                            <button
-                                onClick={() => openDetailModal(member)}
-                                className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors"
-                            >
-                                View Details
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                                    <td className="p-3">
+                                        <div className="flex justify-center gap-2">
+                                            <button onClick={() => openDetailModal(member)}>
+                                                <Calendar className="w-4 h-4 text-gray-600" />
+                                            </button>
+                                            <button onClick={() => openModal(member)}>
+                                                <Edit className="w-4 h-4 text-blue-600" />
+                                            </button>
+                                            <button onClick={() => handleDelete(member.id)}>
+                                                <Trash2 className="w-4 h-4 text-red-600" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
             </div>
+
+
 
             {/* Add/Edit Modal */}
             {isModalOpen && (

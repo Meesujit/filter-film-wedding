@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Clock, DollarSign, CheckCircle, AlertCircle, Loader2, Eye, X, Package, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
 import { Input } from '@/app/src/components/ui/input';
 import { Button } from '@/app/src/components/ui/button';
@@ -51,7 +51,6 @@ export default function AssignmentsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // This endpoint will automatically filter bookings for team members
       const bookingsRes = await fetch('/api/admin/booking');
       const packagesRes = await fetch('/api/admin/package');
 
@@ -89,7 +88,6 @@ export default function AssignmentsPage() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-IN', { 
-      weekday: 'short',
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -121,12 +119,10 @@ export default function AssignmentsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  // Sort bookings by date (upcoming first)
   const sortedBookings = [...filteredBookings].sort((a, b) => 
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  const upcomingBookings = sortedBookings.filter(b => new Date(b.date) >= new Date());
   const completedBookings = bookings.filter(b => b.status === 'completed').length;
   const inProgressBookings = bookings.filter(b => b.status === 'in-progress').length;
 
@@ -138,54 +134,121 @@ export default function AssignmentsPage() {
     );
   }
 
+  // Show booking details
+  if (selectedBooking) {
+    const pkg = getPackageById(selectedBooking.packageId);
+    const StatusIcon = statusConfig[selectedBooking.status].icon;
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedBooking(null)}
+          className="gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Assignments
+        </Button>
+
+        <div className="bg-card rounded-xl shadow-card overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-border">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="font-heading text-2xl font-bold text-foreground">{selectedBooking.eventName}</h2>
+                <p className="text-muted-foreground mt-1">{selectedBooking.eventType}</p>
+              </div>
+              <span className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 border ${statusConfig[selectedBooking.status].color}`}>
+                <StatusIcon className="w-4 h-4" />
+                {statusConfig[selectedBooking.status].label}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 border border-primary/20">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-xl bg-primary/20 flex flex-col items-center justify-center border-2 border-primary/30">
+                  <span className="text-2xl font-bold text-primary">
+                    {new Date(selectedBooking.date).getDate()}
+                  </span>
+                  <span className="text-xs uppercase text-primary font-medium">
+                    {new Date(selectedBooking.date).toLocaleDateString('en-US', { month: 'short' })}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-1">Event Date</p>
+                  <p className="font-semibold text-lg text-foreground">{formatDate(selectedBooking.date)}</p>
+                  <p className="text-sm text-primary font-medium mt-1">{getDaysUntil(selectedBooking.date)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-muted/30 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Venue</p>
+                  <p className="font-semibold text-foreground">{selectedBooking.venue}</p>
+                </div>
+              </div>
+            </div>
+
+            {pkg && (
+              <div className="bg-muted/30 rounded-xl p-5">
+                <p className="text-sm text-muted-foreground mb-1">Package</p>
+                <p className="font-semibold text-foreground">{pkg.name}</p>
+                <p className="text-sm text-muted-foreground mt-1">{formatPrice(pkg.price)}</p>
+              </div>
+            )}
+
+            {selectedBooking.notes && (
+              <div className="bg-muted/30 rounded-xl p-5">
+                <p className="text-sm text-muted-foreground mb-2">Notes</p>
+                <p className="text-sm text-foreground">{selectedBooking.notes}</p>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-mono">ID: {selectedBooking.id.slice(0, 8)}</span>
+                {' • '}
+                Created on {new Date(selectedBooking.createdAt).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show assignments table
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div>
         <h1 className="font-heading text-3xl font-bold text-foreground">My Assignments</h1>
         <p className="text-muted-foreground">Events assigned to you</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-xl p-6 shadow-card border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Total Assignments</p>
-              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1">{bookings.length}</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center">
-              <Calendar className="w-7 h-7 text-blue-600 dark:text-blue-300" />
-            </div>
-          </div>
+        <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+          <p className="text-sm text-muted-foreground mb-1">Total Assignments</p>
+          <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
         </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-xl p-6 shadow-card border border-green-200 dark:border-green-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-700 dark:text-green-300 font-medium">In Progress</p>
-              <p className="text-3xl font-bold text-green-900 dark:text-green-100 mt-1">{inProgressBookings}</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center">
-              <Clock className="w-7 h-7 text-green-600 dark:text-green-300" />
-            </div>
-          </div>
+        <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+          <p className="text-sm text-muted-foreground mb-1">In Progress</p>
+          <p className="text-2xl font-bold text-blue-600">{inProgressBookings}</p>
         </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 rounded-xl p-6 shadow-card border border-purple-200 dark:border-purple-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">Completed</p>
-              <p className="text-3xl font-bold text-purple-900 dark:text-purple-100 mt-1">{completedBookings}</p>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center">
-              <CheckCircle className="w-7 h-7 text-purple-600 dark:text-purple-300" />
-            </div>
-          </div>
+        <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+          <p className="text-sm text-muted-foreground mb-1">Completed</p>
+          <p className="text-2xl font-bold text-purple-600">{completedBookings}</p>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-card rounded-xl p-4 shadow-card">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -199,7 +262,7 @@ export default function AssignmentsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 px-3 rounded-md border border-input bg-background min-w-[160px]"
+            className="h-10 px-3 rounded-md border border-input bg-background text-foreground min-w-[160px]"
           >
             <option value="all">All Status</option>
             <option value="approved">Approved</option>
@@ -209,167 +272,74 @@ export default function AssignmentsPage() {
         </div>
       </div>
 
-      {/* Assignments List */}
-      {sortedBookings.length === 0 ? (
-        <div className="bg-card rounded-xl p-12 text-center shadow-card">
-          <Calendar className="w-20 h-20 mx-auto text-muted-foreground mb-4 opacity-50" />
-          <h3 className="text-xl font-semibold text-foreground mb-2">No assignments yet</h3>
-          <p className="text-muted-foreground">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'No assignments match your filters' 
-              : 'You have no assigned events at the moment'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {sortedBookings.map((booking) => {
-            const pkg = getPackageById(booking.packageId);
-            const StatusIcon = statusConfig[booking.status].icon;
-            const isUpcoming = new Date(booking.date) >= new Date();
-
-            return (
-              <div
-                key={booking.id}
-                className="bg-card rounded-xl p-6 shadow-card hover:shadow-lg transition-all cursor-pointer border border-border hover:border-primary/50"
-                onClick={() => setSelectedBooking(booking)}
-              >
-                <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Left: Date Badge */}
-                  <div className="flex-shrink-0">
-                    <div className={`w-20 h-20 rounded-xl flex flex-col items-center justify-center ${
-                      isUpcoming ? 'bg-primary/10 border-2 border-primary' : 'bg-muted border-2 border-border'
-                    }`}>
-                      <span className={`text-2xl font-bold ${isUpcoming ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {new Date(booking.date).getDate()}
-                      </span>
-                      <span className={`text-xs uppercase ${isUpcoming ? 'text-primary' : 'text-muted-foreground'}`}>
-                        {new Date(booking.date).toLocaleDateString('en-US', { month: 'short' })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Middle: Event Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-foreground mb-1">{booking.eventName}</h3>
-                        <p className="text-sm text-muted-foreground">{booking.eventType}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border ${statusConfig[booking.status].color}`}>
-                        <StatusIcon className="w-3.5 h-3.5" />
-                        {statusConfig[booking.status].label}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        <div>
-                          <p className="font-medium text-foreground">{getDaysUntil(booking.date)}</p>
-                          <p className="text-xs text-muted-foreground">{formatDate(booking.date)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        <div>
-                          <p className="font-medium text-foreground truncate">{booking.venue}</p>
-                          <p className="text-xs text-muted-foreground">Venue</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Action Button */}
-                  <div className="flex items-center">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Eye className="w-4 h-4" />
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Booking Detail Modal */}
-      {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-card rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
-            <div className="sticky top-0 bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-border z-10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-heading text-2xl font-bold text-foreground">{selectedBooking.eventName}</h2>
-                  <p className="text-muted-foreground mt-1">{selectedBooking.eventType}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedBooking(null)}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Status Badge */}
-              <div className="flex items-center justify-between">
-                <span className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 border ${statusConfig[selectedBooking.status].color}`}>
-                  {React.createElement(statusConfig[selectedBooking.status].icon, { className: "w-4 h-4" })}
-                  {statusConfig[selectedBooking.status].label}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  Booking ID: <span className="font-mono">{selectedBooking.id.slice(0, 8)}</span>
-                </span>
-              </div>
-
-              {/* Date & Time Info */}
-              <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 border border-primary/20">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary/20 flex flex-col items-center justify-center border-2 border-primary/30">
-                    <span className="text-2xl font-bold text-primary">
-                      {new Date(selectedBooking.date).getDate()}
-                    </span>
-                    <span className="text-xs uppercase text-primary font-medium">
-                      {new Date(selectedBooking.date).toLocaleDateString('en-US', { month: 'short' })}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground mb-1">Event Date</p>
-                    <p className="font-semibold text-lg text-foreground">{formatDate(selectedBooking.date)}</p>
-                    <p className="text-sm text-primary font-medium mt-1">{getDaysUntil(selectedBooking.date)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Venue */}
-              <div className="bg-muted/30 rounded-xl p-5">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Venue</p>
-                    <p className="font-semibold text-foreground">{selectedBooking.venue}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground">
-                  Created on {new Date(selectedBooking.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            </div>
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
+        {sortedBookings.length === 0 ? (
+          <div className="p-12 text-center">
+            <Calendar className="w-20 h-20 mx-auto text-muted-foreground mb-4 opacity-30" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">No assignments yet</h3>
+            <p className="text-muted-foreground">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'No assignments match your filters' 
+                : 'You have no assigned events at the moment'}
+            </p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Event Name</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Type</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Days Until</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Venue</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {sortedBookings.map((booking) => {
+                  const StatusIcon = statusConfig[booking.status].icon;
+                  const isUpcoming = new Date(booking.date) >= new Date();
+
+                  return (
+                    <tr
+                      key={booking.id}
+                      onClick={() => setSelectedBooking(booking)}
+                      className="hover:bg-accent/50 cursor-pointer transition-colors"
+                    >
+                      <td className="p-4">
+                        <p className="font-medium text-foreground">{booking.eventName}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground">{booking.eventType}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground">{formatDate(booking.date)}</p>
+                      </td>
+                      <td className="p-4">
+                        <span className={`text-sm font-medium ${
+                          isUpcoming ? 'text-primary' : 'text-muted-foreground'
+                        }`}>
+                          {getDaysUntil(booking.date)}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground truncate max-w-xs">{booking.venue}</p>
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig[booking.status].color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusConfig[booking.status].label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
