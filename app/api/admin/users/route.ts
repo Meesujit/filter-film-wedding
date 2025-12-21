@@ -1,4 +1,5 @@
 import { auth } from "@/app/auth";
+
 import { userService } from "@/app/lib/services/user-service";
 import { NextResponse } from "next/server";
 
@@ -14,7 +15,7 @@ export async function GET() {
   }
 
   try {
-    const users = await userService.getAllUsers();
+    const users = await userService.getTeamMembers();
     return NextResponse.json({ users });
   } catch (error) {
     console.error("Error fetching users:", error);

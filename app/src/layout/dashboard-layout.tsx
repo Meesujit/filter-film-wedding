@@ -15,10 +15,10 @@ const navigationConfig = {
     { href: '/admin/gallery', label: 'Manage Gallery', icon: Image },
     { href: '/admin/team', label: 'Manage Team', icon: Users },
     { href: '/admin/profile', label: 'Profile', icon: User },
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
+    // { href: '/admin/settings', label: 'Settings', icon: Settings },
   ],
   customer: [
-    { href: '/customer/dashboard', label: 'Dashboard', icon: Home },
+    // { href: '/customer/dashboard', label: 'Dashboard', icon: Home },
     { href: '/customer/packages', label: 'Browse Packages', icon: Package },
     { href: '/customer/bookings', label: 'My Bookings', icon: Calendar },
     { href: '/customer/profile', label: 'Profile', icon: User },

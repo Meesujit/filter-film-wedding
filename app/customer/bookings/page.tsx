@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Package as PackageIcon, Loader2, Plus, X, Type, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, MapPin, Package, Loader2, Plus, X, Type, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
 import { Button } from '@/app/src/components/ui/button';
 import { Input } from '@/app/src/components/ui/input';
@@ -22,7 +22,7 @@ interface Booking {
   createdAt: string;
 }
 
-interface Package {
+interface PackageType {
   id: string;
   name: string;
   description: string;
@@ -41,12 +41,14 @@ const statusConfig = {
 export default function CustomerBookingsPage() {
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [packages, setPackages] = useState<PackageType[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  
+
   const [formData, setFormData] = useState({
     packageId: '',
     eventType: '',
@@ -61,7 +63,8 @@ export default function CustomerBookingsPage() {
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
+    setBookingsLoading(true);
+    setPackagesLoading(true);
     try {
       const [bookingsRes, packagesRes] = await Promise.all([
         fetch('/api/admin/booking'),
@@ -83,14 +86,14 @@ export default function CustomerBookingsPage() {
         variant: 'destructive'
       });
     } finally {
-      setLoading(false);
+      setBookingsLoading(false);
+      setPackagesLoading(false);
     }
   };
 
   const selectedPackage = packages.find(pkg => pkg.id === formData.packageId);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setSubmitting(true);
 
     if (!selectedPackage) {
@@ -136,7 +139,7 @@ export default function CustomerBookingsPage() {
           notes: '',
         });
         setShowForm(false);
-        fetchData(); // Refresh bookings list
+        fetchData();
       } else {
         toast({
           title: 'Error',
@@ -167,18 +170,11 @@ export default function CustomerBookingsPage() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       day: 'numeric',
-      month: 'long',
+      month: 'short',
       year: 'numeric'
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   // Show booking form
   if (showForm) {
@@ -201,18 +197,17 @@ export default function CustomerBookingsPage() {
           <p className="text-muted-foreground">Fill in the details to book your event</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-card p-6 space-y-6">
-          {/* Package Selection */}
+        <div className="bg-card rounded-xl shadow-card p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium mb-2">
-              <PackageIcon className="w-4 h-4 inline mr-1" />
+              <Package className="w-4 h-4 inline mr-1" />
               Select Package *
             </label>
             <select
               required
               value={formData.packageId}
               onChange={(e) => setFormData({ ...formData, packageId: e.target.value })}
-              className="w-full h-10 px-3 rounded-md border border-input bg-background"
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-foreground"
             >
               <option value="">Choose a package</option>
               {packages.map(pkg => (
@@ -223,7 +218,6 @@ export default function CustomerBookingsPage() {
             </select>
           </div>
 
-          {/* Show selected package details */}
           {selectedPackage && (
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-5 border border-primary/20">
               <h3 className="font-semibold text-lg text-foreground mb-2">{selectedPackage.name}</h3>
@@ -239,7 +233,6 @@ export default function CustomerBookingsPage() {
             </div>
           )}
 
-          {/* Event Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -312,7 +305,8 @@ export default function CustomerBookingsPage() {
               Cancel
             </Button>
             <Button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               className="flex-1"
               disabled={submitting || !formData.packageId}
             >
@@ -320,12 +314,109 @@ export default function CustomerBookingsPage() {
               Submit Booking Request
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     );
   }
 
-  // Show bookings list
+  // Show booking details
+  if (selectedBooking) {
+    const pkg = packages.find(p => p.id === selectedBooking.packageId);
+    const pendingAmount = selectedBooking.totalAmount - selectedBooking.paidAmount;
+    const StatusIcon = statusConfig[selectedBooking.status].icon;
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedBooking(null)}
+          className="gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Bookings
+        </Button>
+
+        <div className="bg-card rounded-xl shadow-card overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-border">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="font-heading text-2xl font-bold text-foreground">{selectedBooking.eventName}</h2>
+                <p className="text-muted-foreground mt-1">{selectedBooking.eventType}</p>
+              </div>
+              <span className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 border ${statusConfig[selectedBooking.status].color}`}>
+                <StatusIcon className="w-4 h-4" />
+                {statusConfig[selectedBooking.status].label}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-muted/30 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  <p className="text-sm text-muted-foreground">Event Date</p>
+                </div>
+                <p className="font-semibold text-foreground">{formatDate(selectedBooking.date)}</p>
+              </div>
+              <div className="bg-muted/30 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <p className="text-sm text-muted-foreground">Venue</p>
+                </div>
+                <p className="font-semibold text-foreground">{selectedBooking.venue}</p>
+              </div>
+            </div>
+
+            <div className="bg-muted/30 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Package className="w-5 h-5 text-primary" />
+                <p className="text-sm text-muted-foreground">Package</p>
+              </div>
+              <p className="font-semibold text-foreground">{pkg?.name || 'N/A'}</p>
+              {pkg && <p className="text-sm text-muted-foreground mt-1">{pkg.description}</p>}
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-xl p-5 border border-green-200 dark:border-green-800">
+              <h3 className="font-semibold text-foreground mb-4">Payment Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
+                  <p className="text-2xl font-bold text-foreground">{formatPrice(selectedBooking.totalAmount)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Paid Amount</p>
+                  <p className="text-2xl font-bold text-green-600">{formatPrice(selectedBooking.paidAmount)}</p>
+                </div>
+              </div>
+              {pendingAmount > 0 && (
+                <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+                  <p className="text-sm text-muted-foreground mb-1">Pending Amount</p>
+                  <p className="text-xl font-bold text-orange-600">{formatPrice(pendingAmount)}</p>
+                </div>
+              )}
+            </div>
+
+            {selectedBooking.notes && (
+              <div className="bg-muted/30 rounded-xl p-4">
+                <p className="text-sm text-muted-foreground mb-2">Additional Notes</p>
+                <p className="text-sm text-foreground">{selectedBooking.notes}</p>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-border text-xs text-muted-foreground">
+              <span className="font-mono">ID: {selectedBooking.id.slice(0, 8)}</span>
+              {' • '}
+              Booked on {formatDate(selectedBooking.createdAt)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show bookings table
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -339,7 +430,6 @@ export default function CustomerBookingsPage() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-card rounded-xl p-5 shadow-card border border-border">
           <p className="text-sm text-muted-foreground mb-1">Total Bookings</p>
@@ -365,195 +455,85 @@ export default function CustomerBookingsPage() {
         </div>
       </div>
 
-      {/* Bookings List */}
-      {bookings.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-card p-12 text-center">
-          <PackageIcon className="w-20 h-20 mx-auto mb-4 text-muted-foreground opacity-30" />
-          <h3 className="text-xl font-semibold text-foreground mb-2">No Bookings Yet</h3>
-          <p className="text-muted-foreground mb-6">
-            You haven't made any bookings yet. Start by booking your first event!
-          </p>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Create First Booking
-          </Button>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {bookings.map((booking) => {
-            const pkg = packages.find(p => p.id === booking.packageId);
-            const pendingAmount = booking.totalAmount - booking.paidAmount;
-            const StatusIcon = statusConfig[booking.status].icon;
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
+        {(bookingsLoading || packagesLoading) ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : bookings.length === 0 ? (
+          <div className="p-12 text-center">
+            <Package className="w-20 h-20 mx-auto mb-4 text-muted-foreground opacity-30" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">No Bookings Yet</h3>
+            <p className="text-muted-foreground mb-6">
+              You haven't made any bookings yet. Start by booking your first event!
+            </p>
+            <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Create First Booking
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Event Name</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Event Type</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Venue</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Package</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {bookings.map((booking) => {
+                  const pkg = packages.find(p => p.id === booking.packageId);
+                  const StatusIcon = statusConfig[booking.status].icon;
 
-            return (
-              <div
-                key={booking.id}
-                className="bg-card rounded-xl shadow-card hover:shadow-lg transition-all cursor-pointer border border-border"
-                onClick={() => setSelectedBooking(booking)}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-heading text-xl font-semibold text-foreground mb-2">
-                        {booking.eventName}
-                      </h3>
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-4 h-4" />
-                          {formatDate(booking.date)}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4" />
-                          {booking.venue}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Type className="w-4 h-4" />
-                          {booking.eventType}
-                        </span>
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 border ${statusConfig[booking.status].color}`}>
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {statusConfig[booking.status].label}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Package</p>
-                      <p className="font-medium text-foreground">{pkg?.name || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
-                      <p className="font-semibold text-primary">{formatPrice(booking.totalAmount)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Paid</p>
-                      <p className="font-semibold text-green-600">{formatPrice(booking.paidAmount)}</p>
-                    </div>
-                  </div>
-
-                  {pendingAmount > 0 && (
-                    <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <div className="flex items-center justify-between">
+                  return (
+                    <tr
+                      key={booking.id}
+                      onClick={() => setSelectedBooking(booking)}
+                      className="hover:bg-accent/50 cursor-pointer transition-colors"
+                    >
+                      <td className="p-4">
+                        <p className="font-medium text-foreground">{booking.eventName}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground">{booking.eventType}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground">{formatDate(booking.date)}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground truncate max-w-xs">{booking.venue}</p>
+                      </td>
+                      <td className="p-4">
+                        <p className="text-sm text-foreground">{pkg?.name || 'N/A'}</p>
+                      </td>
+                      <td className="p-4">
                         <div>
-                          <p className="text-sm font-medium text-orange-800">Pending Payment</p>
-                          <p className="text-xs text-orange-600 mt-0.5">
-                            {formatPrice(booking.paidAmount)} of {formatPrice(booking.totalAmount)} paid
+                          <p className="text-sm font-semibold text-foreground">{formatPrice(booking.totalAmount)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Paid: {formatPrice(booking.paidAmount)}
                           </p>
                         </div>
-                        <p className="text-lg font-bold text-orange-700">
-                          {formatPrice(pendingAmount)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Booking Detail Modal */}
-      {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-card rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
-            <div className="sticky top-0 bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-border z-10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-heading text-2xl font-bold text-foreground">{selectedBooking.eventName}</h2>
-                  <p className="text-muted-foreground mt-1">{selectedBooking.eventType}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedBooking(null)}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <span className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 border ${statusConfig[selectedBooking.status].color}`}>
-                  {React.createElement(statusConfig[selectedBooking.status].icon, { className: "w-4 h-4" })}
-                  {statusConfig[selectedBooking.status].label}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  ID: <span className="font-mono">{selectedBooking.id.slice(0, 8)}</span>
-                </span>
-              </div>
-
-              {/* Date & Venue */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/30 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <p className="text-sm text-muted-foreground">Event Date</p>
-                  </div>
-                  <p className="font-semibold text-foreground">{formatDate(selectedBooking.date)}</p>
-                </div>
-                <div className="bg-muted/30 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    <p className="text-sm text-muted-foreground">Venue</p>
-                  </div>
-                  <p className="font-semibold text-foreground">{selectedBooking.venue}</p>
-                </div>
-              </div>
-
-              {/* Package */}
-              <div className="bg-muted/30 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <PackageIcon className="w-5 h-5 text-primary" />
-                  <p className="text-sm text-muted-foreground">Package</p>
-                </div>
-                <p className="font-semibold text-foreground">
-                  {packages.find(p => p.id === selectedBooking.packageId)?.name || 'N/A'}
-                </p>
-              </div>
-
-              {/* Payment */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 rounded-xl p-5 border border-green-200 dark:border-green-800">
-                <h3 className="font-semibold text-foreground mb-4">Payment Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Total Amount</p>
-                    <p className="text-2xl font-bold text-foreground">{formatPrice(selectedBooking.totalAmount)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Paid Amount</p>
-                    <p className="text-2xl font-bold text-green-600">{formatPrice(selectedBooking.paidAmount)}</p>
-                  </div>
-                </div>
-                {selectedBooking.totalAmount > selectedBooking.paidAmount && (
-                  <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
-                    <p className="text-sm text-muted-foreground mb-1">Pending Amount</p>
-                    <p className="text-xl font-bold text-orange-600">
-                      {formatPrice(selectedBooking.totalAmount - selectedBooking.paidAmount)}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              {selectedBooking.notes && (
-                <div className="bg-muted/30 rounded-xl p-4">
-                  <p className="text-sm text-muted-foreground mb-2">Additional Notes</p>
-                  <p className="text-sm text-foreground">{selectedBooking.notes}</p>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="pt-4 border-t border-border text-xs text-muted-foreground">
-                Booked on {formatDate(selectedBooking.createdAt)}
-              </div>
-            </div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig[booking.status].color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusConfig[booking.status].label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

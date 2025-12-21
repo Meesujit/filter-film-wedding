@@ -5,7 +5,6 @@ import { useToast } from '@/app/hooks/use-toast';
 import { Input } from '@/app/src/components/ui/input';
 import { Button } from '@/app/src/components/ui/button';
 import { Booking } from '@/app/types/booking';
-import { div } from 'framer-motion/client';
 
 interface Package {
   id: string;
@@ -326,7 +325,7 @@ const ManageBookings: React.FC = () => {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="h-72 text-center align-middle">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
                   </td>
                 </tr>
               ) : filteredBookings.length === 0 ? (
@@ -340,7 +339,7 @@ const ManageBookings: React.FC = () => {
                   const pkg = getPackageById(booking.packageId);
                   const assignedCount = booking.assignedTeam?.length || 0;
                   return (
-                    <tr key={booking.id} className="hover:bg-muted/30">
+                    <tr key={booking.id} className="hover:bg-muted/30 crursor-pointer">
                       <td className="p-4">
                         <p className="font-medium text-foreground">{booking.eventName}</p>
                         <p className="text-sm text-muted-foreground">{booking.venue}</p>
