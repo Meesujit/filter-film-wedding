@@ -207,7 +207,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-0 flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground">Manage Gallery</h1>
