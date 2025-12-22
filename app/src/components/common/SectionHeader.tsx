@@ -34,7 +34,7 @@ export default function SectionHeader({
       
       {subtitle && (
         <p className={cn(
-          'text-lg max-w-2xl',
+          'text-lg max-w-2xl font-semibold leading-relaxed',
           centered && 'mx-auto',
           light ? 'text-primary-foreground/80' : 'text-muted-foreground'
         )}>
