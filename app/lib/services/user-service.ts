@@ -89,9 +89,6 @@ export const userService = {
     // Add role-specific profile
     if (userData.role === 'team' && userData.teamProfile) {
       newUser.teamProfile = {
-        assignment: [],
-        progress: '0%',
-        attendance: '100%',
         ...userData.teamProfile,
       };
     } else if (userData.role === 'customer' && userData.customerProfile) {
@@ -132,11 +129,7 @@ export const userService = {
 
     // Initialize role-specific profile when role changes
     if (role === 'team' && !user.teamProfile) {
-      updates.teamProfile = {
-        assignment: [],
-        progress: '0%',
-        attendance: '100%',
-      };
+      updates.teamProfile
     } else if (role === 'customer' && !user.customerProfile) {
       updates.customerProfile = {
         preferences: [],
@@ -184,34 +177,6 @@ export const userService = {
     };
 
     return this.updateUser(userId, { teamProfile: updatedProfile });
-  },
-
-  async addAssignment(userId: string, assignment: string): Promise<User | null> {
-    const user = await this.getUserById(userId);
-    if (!user || user.role !== 'team') return null;
-
-    const assignments = user.teamProfile?.assignment || [];
-    assignments.push(assignment);
-
-    return this.updateTeamProfile(userId, { assignment: assignments });
-  },
-
-  async removeAssignment(userId: string, assignmentIndex: number): Promise<User | null> {
-    const user = await this.getUserById(userId);
-    if (!user || user.role !== 'team') return null;
-
-    const assignments = user.teamProfile?.assignment || [];
-    assignments.splice(assignmentIndex, 1);
-
-    return this.updateTeamProfile(userId, { assignment: assignments });
-  },
-
-  async updateAttendance(userId: string, attendance: string): Promise<User | null> {
-    return this.updateTeamProfile(userId, { attendance });
-  },
-
-  async updateProgress(userId: string, progress: string): Promise<User | null> {
-    return this.updateTeamProfile(userId, { progress });
   },
 
   // Customer-specific methods
@@ -280,26 +245,5 @@ export const userService = {
       unverified: users.filter(u => !u.emailVerified).length,
     };
   },
-
-  async getTeamStats() {
-    const teamMembers = await this.getTeamMembers();
-    
-    const totalAssignments = teamMembers.reduce((sum, member) => 
-      sum + (member.teamProfile?.assignment?.length || 0), 0
-    );
-
-    const avgAttendance = teamMembers.reduce((sum, member) => {
-      const attendance = parseFloat(member.teamProfile?.attendance || '100');
-      return sum + attendance;
-    }, 0) / (teamMembers.length || 1);
-
-    return {
-      totalMembers: teamMembers.length,
-      totalAssignments,
-      averageAttendance: `${avgAttendance.toFixed(1)}%`,
-      activeMembers: teamMembers.filter(m => 
-        (m.teamProfile?.assignment?.length || 0) > 0
-      ).length,
-    };
-  },
-};
+}
+  

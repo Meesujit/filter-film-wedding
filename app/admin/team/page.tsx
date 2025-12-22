@@ -5,7 +5,7 @@ import { useToast } from "@/app/hooks/use-toast";
 import { Button } from "@/app/src/components/ui/button";
 import { User } from "@/app/types/user";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, X, Upload, Edit, Delete, Trash, Trash2 } from "lucide-react";
+import { Loader2, Plus, X, Upload, Edit, Trash2 } from "lucide-react";
 import Image from "next/image";
 
 interface Props {
@@ -18,8 +18,6 @@ export default function TeamPage({ initialTeam }: Props) {
   const [team, setTeam] = useState<User[]>([]);
   const [accessDenied, setAccessDenied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,9 +32,6 @@ export default function TeamPage({ initialTeam }: Props) {
     experience: '',
     bio: '',
     instagram: '',
-    assignment: [] as string[],
-    progress: '0%',
-    attendance: '100%',
     email: '',
   });
 
@@ -49,9 +44,6 @@ export default function TeamPage({ initialTeam }: Props) {
       experience: '',
       bio: '',
       instagram: '',
-      assignment: [],
-      progress: '0%',
-      attendance: '100%',
       email: '',
     });
     setEditingId(null);
@@ -93,9 +85,6 @@ export default function TeamPage({ initialTeam }: Props) {
         experience: member.teamProfile?.experience || '',
         bio: member.teamProfile?.bio || '',
         instagram: member.teamProfile?.instagram || '',
-        assignment: member.teamProfile?.assignment || [],
-        progress: member.teamProfile?.progress || '0%',
-        attendance: member.teamProfile?.attendance || '100%',
         email: member.email || '',
       });
       setLocalPreview(member.image || null);
@@ -138,10 +127,6 @@ export default function TeamPage({ initialTeam }: Props) {
     return url as string;
   };
 
-  const openDetailModal = (member: User) => {
-    setSelectedMember(member);
-    setIsDetailModalOpen(true);
-  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -256,22 +241,6 @@ export default function TeamPage({ initialTeam }: Props) {
     }
   };
 
-  const addAssignment = () => {
-    const assignment = prompt('Enter assignment:');
-    if (assignment) {
-      setFormData(prev => ({
-        ...prev,
-        assignment: [...prev.assignment, assignment],
-      }));
-    }
-  };
-
-  const removeAssignment = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      assignment: prev.assignment.filter((_, i) => i !== index),
-    }));
-  };
 
   if (accessDenied) {
     return (
@@ -284,7 +253,7 @@ export default function TeamPage({ initialTeam }: Props) {
   }
 
   return (
-    <div className="space-y-0 animated-fade-in">
+    <div className="space-y-0 flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold text-foreground">Manage Team</h1>
@@ -303,9 +272,6 @@ export default function TeamPage({ initialTeam }: Props) {
               <tr>
                 <th className="text-left p-4 text-sm font-medium text-muted-foreground">Member</th>
                 <th className="p-3 text-sm font-medium text-muted-foreground">Role</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Attendance</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Progress</th>
-                <th className="p-3 text-sm font-medium text-muted-foreground">Assignments</th>
                 <th className="p-3 text-sm font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
@@ -355,15 +321,6 @@ export default function TeamPage({ initialTeam }: Props) {
                     </td>
 
                     <td className="p-3 text-center text-foreground">{member.role}</td>
-                    <td className="p-3 text-center text-foreground">
-                      {member.teamProfile?.attendance || 'N/A'}
-                    </td>
-                    <td className="p-3 text-center text-foreground">
-                      {member.teamProfile?.progress || 'N/A'}
-                    </td>
-                    <td className="p-3 text-center text-foreground">
-                      {member.teamProfile?.assignment?.length || 0}
-                    </td>
                     <td className="p-3 text-center space-x-2">
                       <Button
                         variant="ghost"
@@ -536,68 +493,7 @@ export default function TeamPage({ initialTeam }: Props) {
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                   placeholder="@username"
                 />
-              </div>
-
-              {/* Progress */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Progress
-                </label>
-                <input
-                  type="text"
-                  value={formData.progress}
-                  onChange={(e) => setFormData({ ...formData, progress: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
-                  placeholder="e.g., 75%"
-                />
-              </div>
-
-              {/* Attendance */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Attendance
-                </label>
-                <input
-                  type="text"
-                  value={formData.attendance}
-                  onChange={(e) => setFormData({ ...formData, attendance: e.target.value })}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
-                  placeholder="e.g., 95%"
-                />
-              </div>
-
-              {/* Assignments */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Assignments
-                </label>
-                <div className="space-y-2 mb-2">
-                  {formData.assignment.map((assignment, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="flex-1 px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-                        {assignment}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeAssignment(index)}
-                        className="text-destructive hover:text-destructive/80"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={addAssignment}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Assignment
-                </Button>
-              </div>
-
+              </div>             
               {/* Submit Buttons */}
               <div className="flex justify-end space-x-3 pt-4">
                 <Button

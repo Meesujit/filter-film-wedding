@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Menu, X, Home, Package, Calendar, Image, Users, Settings, LogOut, User, CreditCard, Upload, ChevronRight, Loader2, CircleArrowOutUpLeft, CircleArrowOutUpLeftIcon } from 'lucide-react';
+import { Menu, X, Home, Package, Calendar, Image, Users, LogOut, User, ChevronRight, Loader2, CircleArrowOutUpLeftIcon, ClipboardCheck } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ const navigationConfig = {
     { href: '/admin/bookings', label: 'Manage Bookings', icon: Calendar },
     { href: '/admin/gallery', label: 'Manage Gallery', icon: Image },
     { href: '/admin/team', label: 'Manage Team', icon: Users },
+    { href: '/admin/attendance', label: 'Attendance', icon: ClipboardCheck },
     { href: '/admin/profile', label: 'Profile', icon: User },
     // { href: '/admin/settings', label: 'Settings', icon: Settings },
   ],
@@ -28,6 +29,7 @@ const navigationConfig = {
     { href: '/team/assignments', label: 'My Assignments', icon: Calendar },
     // { href: '/team/deliverables', label: 'Deliverables', icon: Upload },
     // { href: '/team/reports', label: 'Reports', icon: FileText },
+    { href: '/team/attendance', label: 'Attendance', icon: ClipboardCheck },
     { href: '/team/profile', label: 'Profile', icon: User },
   ]
 };
