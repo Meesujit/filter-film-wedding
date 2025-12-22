@@ -16,9 +16,6 @@ export interface User {
     experience?: string;
     bio?: string;
     instagram?: string;
-    assignment?: string[];
-    progress?: string;
-    attendance?: string;
     phoneNumber?: string;
     emergencyContact?: string;
     joiningDate?: string;

@@ -29,9 +29,6 @@ export default function TeamManagementClient({ initialTeam }: Props) {
         experience: '',
         bio: '',
         instagram: '',
-        assignment: [] as string[],
-        progress: '0%',
-        attendance: '0%',
         email: '',
     });
 
@@ -44,9 +41,6 @@ export default function TeamManagementClient({ initialTeam }: Props) {
             experience: '',
             bio: '',
             instagram: '',
-            assignment: [],
-            progress: '0%',
-            attendance: '100%',
             email: '',
         });
         setEditingId(null);
@@ -63,9 +57,6 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                 experience: member.teamProfile?.experience || '',
                 bio: member.teamProfile?.bio || '',
                 instagram: member.teamProfile?.instagram || '',
-                assignment: member.teamProfile?.assignment || [],
-                progress: member.teamProfile?.progress || '0%',
-                attendance: member.teamProfile?.attendance || '0%',
                 email: member.email || '',
             });
         } else {
@@ -184,23 +175,6 @@ export default function TeamManagementClient({ initialTeam }: Props) {
         }
     };
 
-    const addAssignment = () => {
-        const assignment = prompt('Enter assignment:');
-        if (assignment) {
-            setFormData(prev => ({
-                ...prev,
-                assignment: [...prev.assignment, assignment],
-            }));
-        }
-    };
-
-    const removeAssignment = (index: number) => {
-        setFormData(prev => ({
-            ...prev,
-            assignment: prev.assignment.filter((_, i) => i !== index),
-        }));
-    };
-
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -269,18 +243,6 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                                     </td>
 
                                     <td className="p-3 text-center">{member.role}</td>
-
-                                    <td className="p-3 text-center text-green-600">
-                                        {member.teamProfile?.attendance || '100%'}
-                                    </td>
-
-                                    <td className="p-3 text-center text-blue-600">
-                                        {member.teamProfile?.progress || '0%'}
-                                    </td>
-
-                                    <td className="p-3 text-center text-purple-600">
-                                        {member.teamProfile?.assignment?.length || 0}
-                                    </td>
 
                                     <td className="p-3">
                                         <div className="flex justify-center gap-2">
@@ -431,57 +393,7 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                                         placeholder="@username"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Attendance</label>
-                                    <input
-                                        value={formData.attendance}
-                                        onChange={(e) => setFormData({ ...formData, attendance: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="100%"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Progress</label>
-                                <input
-                                    value={formData.progress}
-                                    onChange={(e) => setFormData({ ...formData, progress: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="75%"
-                                />
-                            </div>
-
-                            {/* Assignments */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-medium">Assignments</label>
-                                    <button
-                                        type="button"
-                                        onClick={addAssignment}
-                                        className="text-sm text-blue-600 hover:text-blue-700"
-                                    >
-                                        + Add Assignment
-                                    </button>
-                                </div>
-                                <div className="space-y-2">
-                                    {formData.assignment.map((task, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            <input
-                                                value={task}
-                                                readOnly
-                                                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => removeAssignment(index)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
+                                
                             </div>
 
                             <div className="flex gap-3 pt-4">
@@ -559,62 +471,11 @@ export default function TeamManagementClient({ initialTeam }: Props) {
                                 </div>
                             </div>
 
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-3 gap-4 mb-6">
-                                <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                                    <div className="flex items-center gap-2 text-green-700 mb-1">
-                                        <Calendar className="w-5 h-5" />
-                                        <span className="text-sm font-medium">Attendance</span>
-                                    </div>
-                                    <p className="text-2xl font-bold text-green-600">
-                                        {selectedMember.teamProfile?.attendance || '100%'}
-                                    </p>
-                                </div>
-                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                                    <div className="flex items-center gap-2 text-blue-700 mb-1">
-                                        <TrendingUp className="w-5 h-5" />
-                                        <span className="text-sm font-medium">Progress</span>
-                                    </div>
-                                    <p className="text-2xl font-bold text-blue-600">
-                                        {selectedMember.teamProfile?.progress || '0%'}
-                                    </p>
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
-                                    <div className="flex items-center gap-2 text-purple-700 mb-1">
-                                        <Briefcase className="w-5 h-5" />
-                                        <span className="text-sm font-medium">Assignments</span>
-                                    </div>
-                                    <p className="text-2xl font-bold text-purple-600">
-                                        {selectedMember.teamProfile?.assignment?.length || 0}
-                                    </p>
-                                </div>
-                            </div>
-
                             {/* Bio Section */}
                             <div className="mb-6">
                                 <h4 className="text-lg font-semibold text-gray-900 mb-2">Biography</h4>
                                 <p className="text-gray-600 leading-relaxed">{selectedMember.teamProfile?.bio}</p>
                             </div>
-
-                            {/* Assignments Section */}
-                            {selectedMember.teamProfile?.assignment && selectedMember.teamProfile?.assignment.length > 0 && (
-                                <div className="mb-6">
-                                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Current Assignments</h4>
-                                    <div className="space-y-2">
-                                        {selectedMember.teamProfile.assignment.map((task, index) => (
-                                            <div
-                                                key={index}
-                                                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                                            >
-                                                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
-                                                    {index + 1}
-                                                </div>
-                                                <span className="text-gray-700">{task}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Timeline */}
                             <div className="border-t border-gray-200 pt-4">

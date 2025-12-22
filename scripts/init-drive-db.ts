@@ -3,7 +3,7 @@ import { driveService } from '@/app/lib/google-drive';
 
 async function initDatabase() {
   const initialData = {
-    setting: [],
+    attendance: [],
   };
 
   for (const [collection, data] of Object.entries(initialData)) {

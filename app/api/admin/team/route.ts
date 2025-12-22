@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   try {
     const data = await req.json();
-    
+
     console.log("Creating team member with data:", data);
 
     // Check if email already exists
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    
+
     // Create user with team role
     const newMember = await userService.createUser({
       email: data.email,
@@ -55,9 +55,6 @@ export async function POST(req: Request) {
         experience: data.experience,
         bio: data.bio,
         instagram: data.instagram,
-        assignment: data.assignment || [],
-        progress: data.progress || '0%',
-        attendance: data.attendance || '100%',
         phoneNumber: data.phoneNumber,
         department: data.department,
         joiningDate: data.joiningDate || new Date().toISOString(),
