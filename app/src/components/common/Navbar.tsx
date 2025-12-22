@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react'; // Import from next-auth
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { cn } from '@/app/lib/utils';
+import Image from 'next/image';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -48,12 +49,14 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-royal flex items-center justify-center">
-              <span className="text-primary-foreground font-heading text-xl font-bold">R</span>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-heading text-xl font-bold text-foreground">Royal Weddings</h1>
-              <p className="text-xs text-muted-foreground tracking-widest">STUDIO</p>
+            <div className="hidden sm:flex items-center gap-2">
+              <Image 
+                src="/logo/filter-film-logo.svg"
+                alt="Filter Film Studio Logo" 
+                width={150}
+                height={40}
+                className=' w-60 h-32 object-cover'
+              />
             </div>
           </Link>
 
@@ -64,7 +67,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'text-sm font-medium transition-colors hover:text-primary relative py-2',
+                  'text-lg font-bold transition-colors hover:text-primary relative py-2',
                   pathname === link.href
                     ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gold'
                     : 'text-muted-foreground'
@@ -99,9 +102,9 @@ export default function Navbar() {
                 </Button>
               </Link>
             )}
-            <Link href="/book">
+            <Link href="/packages">
               <Button className="bg-gradient-royal hover:opacity-90 transition-opacity">
-                Book Now
+                Explore Packages
               </Button>
             </Link>
           </div>
@@ -126,7 +129,7 @@ export default function Navbar() {
                   href={link.href}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    'px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                    'px-4 py-3 rounded-lg text-lg font-bold transition-colors',
                     pathname === link.href
                       ? 'bg-primary/10 text-primary'
                       : 'text-muted-foreground hover:bg-muted'

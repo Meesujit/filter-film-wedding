@@ -46,13 +46,13 @@ export default async function SignInPage({
 function getDashboardByRole(role: string): string {
   switch (role) {
     case "admin":
-      return "/Adm,inDashboard";
+      return "/admin/dashboard";
     case "team":
-      return "/TeamDashboard";
+      return "/team/dashboard";
     case "customer":
-      return "/CustomerDashboard";
+      return "/customer/dashboard";
     default:
-      return "/CustomerDashboard";
+      return "/customer/dashboard";
   }
 }
 
