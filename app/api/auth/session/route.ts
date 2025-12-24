@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
-    console.log('✅ Session retrieved:', { email: user.email, role: user.role });
+    // console.log('✅ Session retrieved:', { email: user.email, role: user.role });
     return NextResponse.json({ user });
   } catch (error) {
     console.error('❌ Error in /api/auth/session:', error);
