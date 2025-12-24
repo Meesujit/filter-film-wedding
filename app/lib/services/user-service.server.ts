@@ -138,7 +138,7 @@ export const userService = {
     return this.updateUser(id, updates);
   },
 
-  async deleteUser(id: string): Promise<boolean> {
+  async deleteUserById(id: string): Promise<boolean> {
     const users = await this.getAllUsers();
     const filteredUsers = users.filter(user => user.id !== id);
     

@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from 'react';
 import { Calendar, Clock, Users, TrendingUp, Loader2 } from 'lucide-react';
-
 import { Attendance } from '@/app/types/attendance';
 import { Button } from '@/app/src/components/ui/button';
 import { useAuth } from '@/app/lib/firebase/auth-context';
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import { set } from 'react-hook-form';
 
 
 export default function TeamAttendancePage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [todayRecord, setTodayRecord] = useState<Attendance | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
-
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -36,6 +38,7 @@ export default function TeamAttendancePage() {
         setTodayRecord(todayAtt || null);
       }
     } catch (error) {
+      toast.error('Failed to load attendance data');
       console.error('Error fetching attendance:', error);
     } finally {
       setLoading(false);
@@ -48,6 +51,7 @@ export default function TeamAttendancePage() {
 
   // Create today's attendance record
   const handleMarkAttendance = async () => {
+    setLoading(true);
     try {
       const res = await fetch('/api/admin/attendance', {
         method: 'POST',
@@ -65,23 +69,27 @@ export default function TeamAttendancePage() {
         return;
       }
 
-      alert('✓ Attendance marked for today!');
+      toast.success('Attendance marked for today');
+      router.refresh();
       fetchAttendance();
     } catch (error) {
+      toast.error('Error marking attendance');
       console.error('Error marking attendance:', error);
-      alert('Error marking attendance');
+    }finally{
+      setLoading(false);
     }
   };
 
   // Punch In Handler
   const handlePunchIn = async () => {
     if (!todayRecord) {
-      alert('No attendance record for today. Please mark attendance first.');
+      toast.error('Please mark attendance first');
       return;
     }
-
+    
     const time = new Date().toTimeString().slice(0, 5);
-
+    
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/attendance/${todayRecord.id}`, {
         method: 'PATCH',
@@ -90,11 +98,12 @@ export default function TeamAttendancePage() {
       });
 
       if (!res.ok) {
-        alert('Punch in failed');
+        toast.error('Punch in failed');
         return;
       }
 
-      alert(`✓ Punched In at ${time}`);
+      toast.success(`✓ Punched In at ${time}`);
+      router.refresh();
       fetchAttendance();
     } catch (error) {
       console.error('Error punching in:', error);
@@ -105,17 +114,18 @@ export default function TeamAttendancePage() {
   // Punch Out Handler
   const handlePunchOut = async () => {
     if (!todayRecord?.checkIn) {
-      alert('Please punch in first');
+      toast.error('Please punch in first');
       return;
     }
 
     if (todayRecord.checkOut) {
-      alert('Already punched out');
+      toast.error('Already punched out for today');
       return;
     }
 
     const time = new Date().toTimeString().slice(0, 5);
 
+    setLoading(true);
     try {
       const res = await fetch(`/api/admin/attendance/${todayRecord.id}`, {
         method: 'PATCH',
@@ -124,15 +134,19 @@ export default function TeamAttendancePage() {
       });
 
       if (!res.ok) {
-        alert('Punch out failed');
+        toast.error('Punch out failed');
         return;
       }
 
-      alert(`✓ Punched Out at ${time}`);
+      toast.success(`✓ Punched Out at ${time}`);
+      router.refresh();
       fetchAttendance();
     } catch (error) {
+      toast.error('Error punching out');
       console.error('Error punching out:', error);
-      alert('Error punching out');
+      
+    }finally{
+      setLoading(false);
     }
   };
 
@@ -334,7 +348,7 @@ export default function TeamAttendancePage() {
                 className="px-4 py-2 border border-border rounded-lg"
               >
                 {months.map((month, index) => (
-                  <option key={index} value={index}>
+                  <option key={index} value={index} className='border border-border rounded-lg bg-muted text-muted-foreground'>
                     {month}
                   </option>
                 ))}
@@ -346,7 +360,7 @@ export default function TeamAttendancePage() {
                 className="px-4 py-2 border border-border rounded-lg"
               >
                 {years.map((year) => (
-                  <option key={year} value={year}>
+                  <option key={year} value={year} className='border border-border rounded-lg bg-muted text-muted-foreground'>
                     {year}
                   </option>
                 ))}

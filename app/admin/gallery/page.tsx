@@ -14,9 +14,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/app/src/components/ui/button';
 import { Input } from '@/app/src/components/ui/input';
-import { useToast } from '@/app/hooks/use-toast';
 import { Gallery } from '@/app/types/gallery';
 import { Label } from '@/app/src/components/ui/label';
+import toast from 'react-hot-toast';
+import DeleteModal from '@/app/src/components/common/modal/delete-modal';
 
 const categories = [
   'Ceremony',
@@ -35,9 +36,8 @@ interface Props {
   initialGallery?: Gallery[];
 }
 
-const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
+export default function ManageGallery({ initialGallery }: Props) {
   const router = useRouter();
-  const { toast } = useToast();
 
   const [gallery, setGallery] = useState<Gallery[]>(initialGallery || []);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,6 +51,10 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
 
   const [mainPreview, setMainPreview] = useState<string | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   /* ---------------- FORM DATA ---------------- */
   const [formData, setFormData] = useState({
@@ -76,11 +80,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
       const data = await res.json();
       if (res.ok) setGallery(data.galleries || []);
     } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load gallery',
-        variant: 'destructive',
-      });
+      toast.error('Failed to fetch gallery items');
     } finally {
       setIsFetching(false);
     }
@@ -93,6 +93,11 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
       if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     };
   }, [mainPreview, thumbnailPreview]);
+
+  const openDeleteModal = (id: string) => {
+    setDeleteId(id);
+    setDeleteOpen(true);
+  }
 
   /* ---------------- UPLOAD HELPER ---------------- */
   const uploadImage = async (file: File): Promise<string> => {
@@ -147,17 +152,13 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
       if (!res.ok) throw new Error(result.error);
 
       setGallery(prev => [...prev, result.gallery]);
-      toast({ title: 'Gallery item added successfully' });
+      toast.success('Gallery item added successfully');
 
       resetForm();
       setIsModalOpen(false);
       router.refresh();
     } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to add gallery item',
-        variant: 'destructive',
-      });
+      toast.error('Failed to add gallery item');
     } finally {
       setLoading(false);
       setIsUploading(false);
@@ -165,12 +166,26 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
   };
 
   /* ---------------- DELETE ---------------- */
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-
-    await fetch(`/api/admin/gallery/${id}`, { method: 'DELETE' });
-    setGallery(prev => prev.filter(item => item.id !== id));
-    router.refresh();
+  const handleDelete = async () => {
+    if(!deleteId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/gallery/${deleteId}`, { method: 'DELETE' });
+      if (res.ok){
+        setGallery(prev => prev.filter(item => item.id !== deleteId));
+        router.refresh();
+        toast.success('Gallery item deleted successfully');
+      }else{
+        const result = await res.json();
+        toast.error(result.error || 'Failed to delete gallery item');
+      }
+    } catch {
+      toast.error('Failed to delete gallery item');
+    }finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+      setDeleteId(null);
+    }
   };
 
   /* ---------------- RESET ---------------- */
@@ -190,6 +205,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
   };
 
   return (
+    <>
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -229,7 +245,7 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
               )}
 
               <button
-                onClick={() => handleDelete(item.id)}
+                onClick={() => openDeleteModal(item.id)}
                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition"
               >
                 <Trash2 className="text-popover" />
@@ -297,7 +313,6 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
                 required
                 value={formData.title}
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
-
               />
             </Label>
 
@@ -428,7 +443,16 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
         </div>
       )}
     </div>
+
+    <DeleteModal
+      open={deleteOpen}
+      title="Delete Gallery Item"
+      description="Are you sure you want to delete this gallery item? This action cannot be undone."
+      onCancel={() => setDeleteOpen(false)}
+      onConfirm={handleDelete}
+      loading={deleting}
+    />
+    </>
   );
 };
 
-export default ManageGallery;

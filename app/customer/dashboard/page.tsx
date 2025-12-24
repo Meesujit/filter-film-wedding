@@ -1,60 +1,54 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Calendar, MapPin, Package as PackageIcon, Loader2, Plus } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
-import { Button } from '@/app/src/components/ui/button';
+import Link from 'next/link';
+import { Calendar, Package, Clock, CheckCircle, AlertCircle, DollarSign, TrendingUp, Loader2, ArrowRight, Star } from 'lucide-react';
+import { useAuth } from '@/app/lib/firebase/auth-context';
+import { useState, useEffect } from 'react';
 import { Booking } from '@/app/types/booking';
+import { Package as PackageType } from '@/app/types/package';
+import toast from 'react-hot-toast';
 
-interface Package {
-  id: string;
-  name: string;
-  price: number;
-}
+const statusConfig = {
+  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
+  approved: { label: 'Approved', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle },
+  'in-progress': { label: 'In Progress', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Clock },
+  completed: { label: 'Completed', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: CheckCircle },
+  rejected: { label: 'Rejected', color: 'bg-red-100 text-red-700 border-red-200', icon: AlertCircle },
+};
 
-const CustomerBookingsView: React.FC = () => {
-  const router = useRouter();
-  const { toast } = useToast();
+export default function CustomerDashboard() {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [packages, setPackages] = useState<PackageType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Fetch customer's bookings
-      const bookingsRes = await fetch('/api/admin/booking');
-      const bookingsData = await bookingsRes.json();
-
-      // Fetch packages to show package names
-      const packagesRes = await fetch('/api/admin/package');
-      const packagesData = await packagesRes.json();
-
-      if (bookingsRes.ok) {
-        setBookings(bookingsData.bookings || []);
-      }
-      if (packagesRes.ok) {
-        setPackages(packagesData.packages || []);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load bookings',
-        variant: 'destructive'
-      });
-    } finally {
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchBookings(), fetchPackages()]);
       setLoading(false);
+    };
+    loadData();
+  }, [user]);
+
+  const fetchBookings = async () => {
+    try {
+      const res = await fetch('/api/admin/booking');
+      const data = await res.json();
+      if (res.ok) setBookings(data.bookings || []);
+    } catch (err) {
+      toast.error('Failed to load bookings.');
+      console.error('Error fetching bookings:', err);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-
-  const getPackageById = (packageId: string) => {
-    return packages.find(pkg => pkg.id === packageId);
+  const fetchPackages = async () => {
+    try {
+      const res = await fetch('/api/admin/package');
+      const data = await res.json();
+      if (res.ok) setPackages(data.packages || []);
+    } catch (err) {
+      console.error('Error fetching packages:', err);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -65,158 +59,271 @@ const CustomerBookingsView: React.FC = () => {
     }).format(price);
   };
 
-  const getStatusColor = (status: Booking['status']) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-700';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'in-progress':
-        return 'bg-blue-100 text-blue-700';
-      case 'completed':
-        return 'bg-purple-100 text-purple-700';
-      case 'rejected':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
-  const getStatusLabel = (status: Booking['status']) => {
-    return status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ');
+  const getDaysUntil = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+    return `In ${diffDays} days`;
   };
+
+  // Calculate statistics
+  const totalBookings = bookings.length;
+  const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+  const approvedBookings = bookings.filter(b => b.status === 'approved').length;
+  const inProgressBookings = bookings.filter(b => b.status === 'in-progress').length;
+  const completedBookings = bookings.filter(b => b.status === 'completed').length;
+  // const rejectedBookings = bookings.filter(b => b.status === 'rejected').length;
+
+  // Financial statistics
+  const totalAmountSpent = bookings.reduce((sum, b) => sum + b.totalAmount, 0);
+  // const totalPaidAmount = bookings.reduce((sum, b) => sum + b.paidAmount, 0);
+  const totalPendingAmount = bookings.reduce((sum, b) => sum + (b.totalAmount - b.paidAmount), 0);
+
+  // Upcoming events (next 30 days)
+  const today = new Date();
+  const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const upcomingEvents = bookings.filter(b => {
+    const eventDate = new Date(b.date);
+    return eventDate >= today && eventDate <= next30Days && b.status !== 'rejected';
+  });
+
+  // Next event
+  const nextEvent = bookings
+    .filter(b => new Date(b.date) >= today && b.status !== 'rejected' && b.status !== 'completed')
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+  // Recent bookings (last 5)
+  const recentBookings = [...bookings]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+
+  const stats = [
+    {
+      label: 'Total Bookings',
+      value: totalBookings,
+      icon: Calendar,
+      color: 'bg-blue-500',
+      textColor: 'text-blue-600',
+      bgLight: 'bg-blue-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'Pending Approval',
+      value: pendingBookings,
+      icon: Clock,
+      color: 'bg-yellow-500',
+      textColor: 'text-yellow-600',
+      bgLight: 'bg-yellow-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'Approved Events',
+      value: approvedBookings,
+      icon: CheckCircle,
+      color: 'bg-green-500',
+      textColor: 'text-green-600',
+      bgLight: 'bg-green-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'In Progress',
+      value: inProgressBookings,
+      icon: TrendingUp,
+      color: 'bg-blue-500',
+      textColor: 'text-blue-600',
+      bgLight: 'bg-blue-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'Completed',
+      value: completedBookings,
+      icon: CheckCircle,
+      color: 'bg-purple-500',
+      textColor: 'text-purple-600',
+      bgLight: 'bg-purple-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'Upcoming Events',
+      value: upcomingEvents.length,
+      icon: AlertCircle,
+      color: 'bg-pink-500',
+      textColor: 'text-pink-600',
+      bgLight: 'bg-pink-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'Total Spent',
+      value: formatPrice(totalAmountSpent),
+      icon: DollarSign,
+      color: 'bg-indigo-500',
+      textColor: 'text-indigo-600',
+      bgLight: 'bg-indigo-50',
+      link: '/customer/bookings',
+    },
+    {
+      label: 'Pending Payment',
+      value: formatPrice(totalPendingAmount),
+      icon: DollarSign,
+      color: 'bg-orange-500',
+      textColor: 'text-orange-600',
+      bgLight: 'bg-orange-50',
+      link: '/customer/bookings',
+    },
+  ];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Loading...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">My Bookings</h1>
-          <p className="text-muted-foreground">View and track your event bookings.</p>
-        </div>
-        <Button variant="royal" onClick={() => router.push('/customer/book')}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Booking
-        </Button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}! 👋</h1>
+        <p className="text-gray-600 mt-1">Here's an overview of your bookings and events</p>
       </div>
 
-      {bookings.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-card p-12 text-center">
-          <PackageIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h3 className="text-xl font-semibold mb-2">No Bookings Yet</h3>
-          <p className="text-muted-foreground mb-6">
-            You haven't made any bookings yet. Start by booking your first event!
-          </p>
-          <Button variant="royal" onClick={() => router.push('/customer/booking')}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create First Booking
-          </Button>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {bookings.map((booking) => {
-            const pkg = getPackageById(booking.packageId);
-            const pendingAmount = booking.totalAmount - booking.paidAmount;
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => (
+          <Link
+            key={stat.label}
+            href={stat.link}
+            className="bg-card rounded-xl p-6 shadow-sm hover:shadow-md transition-all border border-gray-200 group"
+          >
+            <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+              <stat.icon className="w-6 h-6 text-white" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-sm text-gray-600 mt-1">{stat.label}</p>
+          </Link>
+        ))}
+      </div>
 
-            return (
-              <div key={booking.id} className="bg-card rounded-xl shadow-card overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-heading text-xl font-semibold text-foreground mb-1">
-                        {booking.eventName}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(booking.date).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {booking.venue}
-                        </span>
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                      {getStatusLabel(booking.status)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Package</p>
-                      <p className="font-medium">{pkg?.name || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Event Type</p>
-                      <p className="font-medium">{booking.eventType}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
-                      <p className="font-medium text-primary">{formatPrice(booking.totalAmount)}</p>
-                    </div>
-                  </div>
-
-                  {pendingAmount > 0 && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-yellow-800">Pending Payment</p>
-                          <p className="text-xs text-yellow-600">
-                            Paid: {formatPrice(booking.paidAmount)} of {formatPrice(booking.totalAmount)}
-                          </p>
-                        </div>
-                        <p className="text-lg font-bold text-yellow-800">
-                          {formatPrice(pendingAmount)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {booking.notes && (
-                    <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-                      <p className="text-xs text-muted-foreground mb-1">Notes</p>
-                      <p className="text-sm">{booking.notes}</p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/customer/bookings/${booking.id}`)}
-                    >
-                      View Details
-                    </Button>
-                    {booking.status === 'pending' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/customer/bookings/${booking.id}/edit`)}
-                      >
-                        Edit Booking
-                      </Button>
-                    )}
-                  </div>
+      {/* Next Event Highlight */}
+      {nextEvent && (
+        <div className="bg-gradient-to-r from-primary to-primary rounded-xl shadow-lg p-6 text-popover">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="w-5 h-5 fill-popover" />
+                <h2 className="text-xl font-semibold">Your Next Event</h2>
+              </div>
+              <h3 className="text-2xl font-bold mb-2">{nextEvent.eventName}</h3>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDate(nextEvent.date)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-semibold">{getDaysUntil(nextEvent.date)}</span>
+                </div>
+                <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
+                  {nextEvent.eventType}
                 </div>
               </div>
-            );
-          })}
+            </div>
+            <Link
+              href="/customer/bookings"
+              className="px-4 py-2 bg-card text-muted-foreground rounded-lg font-semibold transition-colors flex items-center gap-2"
+            >
+              View Details
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       )}
+
+
+      {/* Recent Bookings */}
+      <div className="bg-card rounded-xl shadow-sm border border-border">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-foreground">Recent Bookings</h2>
+          <Link 
+            href="/customer/bookings" 
+            className="text-sm text-muted-foreground hover:text-primary font-medium flex items-center gap-1"
+          >
+            View All
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="divide-y divide-border">
+          {recentBookings.length === 0 ? (
+            <div className="p-12 text-center">
+              <Calendar className="w-16 h-16 mx-auto text-gold mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">No bookings yet</h3>
+              <p className="text-muted-foreground mb-6">Start by browsing our packages and creating your first booking!</p>
+              <Link
+                href="/customer/packages"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-popover rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                Browse Packages
+              </Link>
+            </div>
+          ) : (
+            recentBookings.map((booking) => {
+              const pkg = packages.find(p => p.id === booking.packageId);
+              const StatusIcon = statusConfig[booking.status].icon;
+
+              return (
+                <div 
+                  key={booking.id} 
+                  className="p-6 hover:bg-popover cursor-pointer transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-foreground">{booking.eventName}</h3>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig[booking.status].color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusConfig[booking.status].label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-muted-foreground mt-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>{formatDate(booking.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          <span>{pkg?.name || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4" />
+                          <span className="font-semibold text-gray-900">{formatPrice(booking.totalAmount)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
-};
-
-export default CustomerBookingsView;
+}

@@ -131,7 +131,7 @@ export async function DELETE(
   try {
     const { memberId } = await context.params;
 
-    const deleted = await userService.deleteUser(memberId);
+    const deleted = await userService.deleteUserById(memberId);
 
     if (!deleted) {
       return NextResponse.json(

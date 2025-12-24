@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Menu, X, Home, Package, Calendar, Image, Users, LogOut, User, 
-  ChevronRight, Loader2, CircleArrowOutUpLeftIcon, ClipboardCheck 
+  ChevronRight, Loader2, Globe, ClipboardCheck 
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -84,7 +84,6 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
     }
   }, [loading, user, router]);
 
-
   // Don't render anything while redirecting
   if (loading || !user || !role) {
     return (
@@ -113,6 +112,7 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
     <div className="h-screen flex overflow-hidden bg-gradient-elegant">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 lg:translate-x-0 lg:static flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Logo Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0`}>
@@ -132,6 +132,7 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
           </button>
         </div>
 
+        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3">
           <div className="space-y-1">
             {navItems.map((item) => {
@@ -156,29 +157,27 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
           </div>
         </nav>
 
-        {/* User Info Section */}
-        <div className="p-3 border-t border-gray-200 bg-card flex-shrink-0">
-          {/* <div className="mb-3 px-3 py-2 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 font-medium mb-1">Signed in as</p>
-            <p className="text-sm font-semibold text-gray-900 truncate">{user.name || user.email}</p>
-            <p className="text-xs text-gray-500 capitalize">{role}</p>
-          </div> */}
-          
-          <button
-            onClick={() => router.push('/')}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg mb-2 transition-colors"
-          >
-            <CircleArrowOutUpLeftIcon className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">Back to Website</span>
-          </button>
-          
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-          >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span className="truncate">Sign Out</span>
-          </button>
+        {/* Bottom Actions - Compact Icon Style */}
+        <div className="p-3 border-t border-border bg-card flex-shrink-0">
+          <div className="flex items-center justify-around gap-2">
+            <button
+              onClick={() => router.push('/')}
+              className="flex-1 flex flex-col items-center gap-1 px-2 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors group"
+              title="Back to Website"
+            >
+              <Globe className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs font-medium">Website</span>
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="flex-1 flex flex-col items-center gap-1 px-2 py-2 text-destructive hover:bg-red-50 rounded-lg transition-colors group"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              <span className="text-xs font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -192,17 +191,24 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile header */}
-        <header className="lg:hidden h-16 bg-card border-b border-border px-4 flex items-center justify-between shadow-sm flex-shrink-0">
+        {/* Desktop Header with User Info */}
+        <header className="h-16 bg-card border-b border-border px-4 lg:px-8 flex items-center justify-between shadow-sm flex-shrink-0">
+          {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Open menu"
           >
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
           
-          <div className="flex items-center gap-2">
+          {/* Page title (optional, can be customized per page) */}
+          <div className="hidden lg:block">
+            <h1 className="text-xl font-bold text-gray-900">{config.title}</h1>
+          </div>
+
+          {/* Mobile title */}
+          <div className="lg:hidden flex items-center gap-2">
             <div className={`w-8 h-8 rounded-full ${config.primaryClass} flex items-center justify-center`}>
               <span className="font-bold text-sm text-white">
                 {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
@@ -210,8 +216,31 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
             </div>
             <span className="font-semibold text-gray-900">{config.title}</span>
           </div>
-          
-          <div className="w-10" />
+
+          {/* User Info - Desktop */}
+          {/* <div className="hidden lg:flex items-center gap-4">
+            <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border">
+              <div className={`w-10 h-10 rounded-full ${config.primaryClass} flex items-center justify-center flex-shrink-0`}>
+                <span className="font-bold text-lg text-popover">
+                  {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-popover-foreground truncate">
+                  {user.name || 'User'}
+                </p>
+                <p className="text-xs text-popover-foreground truncate">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+            <div className={`px-3 py-1 rounded-full ${config.bgClass} ${config.textClass} text-xs font-semibold capitalize`}>
+              {role}
+            </div>
+          </div> */}
+
+          {/* Mobile spacer */}
+          <div className="lg:hidden w-10" />
         </header>
 
         {/* Main content area */}
@@ -221,36 +250,36 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
               <div>
                 <div className="mb-6">
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Welcome to {config.title}
+                    Welcome Back, {user.name || user.email?.split('@')[0]}!
                   </h1>
                   <p className="text-gray-600">
-                    Hello, {user.name || user.email}! Here's your dashboard overview.
+                    Here's your dashboard overview.
                   </p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                  <div className="bg-card rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900">Dashboard</h3>
-                      <Home className="w-5 h-5 text-gray-400" />
+                      <h3 className="font-semibold text-popover-foreground">Dashboard</h3>
+                      <Home className="w-5 h-5 text-popover-foreground" />
                     </div>
-                    <p className="text-gray-600 text-sm">Your main dashboard content</p>
+                    <p className="text-popover-foreground text-sm">Your main dashboard content</p>
                   </div>
                   
-                  <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                  <div className="bg-card rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900">Statistics</h3>
-                      <Package className="w-5 h-5 text-gray-400" />
+                      <h3 className="font-semibold text-popover-foreground">Statistics</h3>
+                      <Package className="w-5 h-5 text-popover-foreground" />
                     </div>
-                    <p className="text-gray-600 text-sm">View your analytics and metrics</p>
+                    <p className="text-popover-foreground text-sm">View your analytics and metrics</p>
                   </div>
                   
-                  <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                  <div className="bg-card rounded-lg shadow p-6 border border-border hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-gray-900">Quick Actions</h3>
-                      <Calendar className="w-5 h-5 text-gray-400" />
+                      <h3 className="font-semibold text-popover-foreground">Quick Actions</h3>
+                      <Calendar className="w-5 h-5 text-popover-foreground" />
                     </div>
-                    <p className="text-gray-600 text-sm">Perform common tasks quickly</p>
+                    <p className="text-popover-foreground text-sm">Perform common tasks quickly</p>
                   </div>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import "./globals.css";
 
 import LayoutWrapper from "./src/components/layout-wrapper";
 import { AuthProvider } from "./lib/firebase/auth-context";
-
+import ToastProvider from "./src/components/providers/toast-provider";
 
 const playfair = Playfair_Display({
   variable: "--font-heading",
@@ -35,10 +35,11 @@ export default async function RootLayout({
       <body
         className={`${playfair.variable} ${cormorant.variable} antialiased`}
       >
+        <ToastProvider />
           <AuthProvider>
-              <LayoutWrapper>
-                {children}
-              </LayoutWrapper>
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
           </AuthProvider>
       </body>
     </html>

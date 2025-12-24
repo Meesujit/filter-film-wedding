@@ -1,10 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Search, Check, X, Eye, Loader2, Edit2, Trash2, ChevronDown, Plus } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { Search, Check, X, Eye, Loader2, Edit2, Trash2, ChevronDown } from 'lucide-react';
 import { Input } from '@/app/src/components/ui/input';
 import { Button } from '@/app/src/components/ui/button';
 import { Booking } from '@/app/types/booking';
+import toast from 'react-hot-toast';
+import { Label } from '@/app/src/components/ui/label';
 
 interface Package {
   id: string;
@@ -25,8 +26,7 @@ const bookingStatuses = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
-const ManageBookings: React.FC = () => {
-  const { toast } = useToast();
+export default function ManageBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -64,12 +64,7 @@ const ManageBookings: React.FC = () => {
         setTeam(teamData.team || []);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load data',
-        variant: 'destructive'
-      });
+      toast.success('Error fetching data');
     } finally {
       setLoading(false);
     }
@@ -105,25 +100,13 @@ const ManageBookings: React.FC = () => {
       if (response.ok) {
         const { booking } = await response.json();
         setBookings(prev => prev.map(b => b.id === id ? booking : b));
-        toast({
-          title: 'Status Updated',
-          description: `Booking status changed to ${status}.`,
-        });
+        toast.success('Status updated successfully');
       } else {
         const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'Failed to update status',
-          variant: 'destructive'
-        });
+        toast.error(error.error || 'Failed to update status');
       }
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update status',
-        variant: 'destructive'
-      });
+      toast.error('Failed to update status');
     }
   };
 
@@ -145,26 +128,13 @@ const ManageBookings: React.FC = () => {
         if (editedBooking?.id === bookingId) {
           setEditedBooking(updatedBooking);
         }
-
-        toast({
-          title: 'Team Updated',
-          description: 'Team assignment has been updated.'
-        });
+        toast.success('Team updated successfully');
       } else {
         const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'Failed to update team',
-          variant: 'destructive'
-        });
+        toast.error(error.error || 'Failed to update team');
       }
     } catch (error) {
-      console.error('Error updating team:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update team',
-        variant: 'destructive'
-      });
+      toast.error('Failed to update team');
     }
   };
 
@@ -204,26 +174,14 @@ const ManageBookings: React.FC = () => {
         setBookings(prev => prev.map(b => b.id === updatedBooking.id ? updatedBooking : b));
         setSelectedBooking(updatedBooking);
         setIsEditMode(false);
-        toast({
-          title: 'Booking Updated',
-          description: 'Booking has been updated successfully.'
-        });
+        toast.success('Booking updated successfully');
       } else {
         const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'Failed to update booking',
-          variant: 'destructive'
-        });
+        toast.error(error.error || 'Failed to update booking');
       }
     } catch (error) {
-      console.error('Error updating booking:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update booking',
-        variant: 'destructive'
-      });
-    }finally{
+      toast.error('Failed to update booking');
+    } finally {
       setLoading(false);
     }
   };
@@ -239,25 +197,13 @@ const ManageBookings: React.FC = () => {
       if (response.ok) {
         setBookings(prev => prev.filter(b => b.id !== bookingId));
         setSelectedBooking(null);
-        toast({
-          title: 'Booking Deleted',
-          description: 'Booking has been deleted successfully.'
-        });
+        toast.success('Booking deleted successfully');
       } else {
         const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'Failed to delete booking',
-          variant: 'destructive'
-        });
+        toast.error(error.error || 'Failed to delete booking');
       }
     } catch (error) {
-      console.error('Error deleting booking:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete booking',
-        variant: 'destructive'
-      });
+      toast.error('Failed to delete booking');
     }
   };
 
@@ -421,7 +367,7 @@ const ManageBookings: React.FC = () => {
               {isEditMode && editedBooking ? (
                 <>
                   <div>
-                    <label className="text-sm text-muted-foreground">Event Name</label>
+                    <Label className="text-sm text-muted-foreground">Event Name</Label>
                     <Input
                       value={editedBooking.eventName}
                       onChange={(e) => setEditedBooking({ ...editedBooking, eventName: e.target.value })}
@@ -430,7 +376,7 @@ const ManageBookings: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground">Event Type</label>
+                      <Label className="text-sm text-muted-foreground">Event Type</Label>
                       <Input
                         value={editedBooking.eventType}
                         onChange={(e) => setEditedBooking({ ...editedBooking, eventType: e.target.value })}
@@ -438,7 +384,7 @@ const ManageBookings: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground">Date</label>
+                      <Label className="text-sm text-muted-foreground">Date</Label>
                       <Input
                         type="date"
                         value={editedBooking.date}
@@ -448,7 +394,7 @@ const ManageBookings: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Venue</label>
+                    <Label className="text-sm text-muted-foreground">Venue</Label>
                     <Input
                       value={editedBooking.venue}
                       onChange={(e) => setEditedBooking({ ...editedBooking, venue: e.target.value })}
@@ -457,7 +403,7 @@ const ManageBookings: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground">Total Amount</label>
+                      <Label className="text-sm text-muted-foreground">Total Amount</Label>
                       <Input
                         type="number"
                         value={editedBooking.totalAmount}
@@ -476,7 +422,7 @@ const ManageBookings: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Status</label>
+                    <Label className="text-sm text-muted-foreground">Status</Label>
                     <select
                       value={editedBooking.status}
                       onChange={(e) => setEditedBooking({ ...editedBooking, status: e.target.value as Booking['status'] })}
@@ -488,7 +434,7 @@ const ManageBookings: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Notes</label>
+                    <Label className="text-sm text-muted-foreground">Notes</Label>
                     <textarea
                       value={editedBooking.notes || ''}
                       onChange={(e) => setEditedBooking({ ...editedBooking, notes: e.target.value })}
@@ -496,41 +442,56 @@ const ManageBookings: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Assign Team Members</label>
+                    <Label className="text-sm text-muted-foreground mb-2 block">Assign Team Members</Label>
                     <div className="relative">
                       <button
-                        onClick={() => setShowTeamDropdown(!showTeamDropdown)}
-                        className="w-full flex items-center justify-between px-3 py-2 rounded-md border border-input bg-background hover:bg-muted/50"
+                        type="button"
+                        onClick={() => setShowTeamDropdown(prev => !prev)}
+                        className="w-full h-10 px-3 flex items-center justify-between rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       >
-                        <span className="text-sm">
-                          {editedBooking.assignedTeam && editedBooking.assignedTeam.length > 0
+                        <span className="truncate">
+                          {editedBooking.assignedTeam?.length
                             ? `${editedBooking.assignedTeam.length} member(s) selected`
                             : 'Select team members'}
                         </span>
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform ${showTeamDropdown ? 'rotate-180' : ''
+                            }`}
+                        />
                       </button>
+
+                      {/* Dropdown */}
                       {showTeamDropdown && (
-                        <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        <div className="absolute z-20 mt-1 w-full rounded-md border bg-card shadow-lg max-h-60 overflow-y-auto">
                           {team.length === 0 ? (
-                            <div className="p-3 text-sm text-muted-foreground">No team members available</div>
+                            <div className="p-3 text-sm text-muted-foreground">
+                              No team members available
+                            </div>
                           ) : (
-                            team.map(member => (
-                              <button
-                                key={member.id}
-                                onClick={() => toggleTeamMember(member.id)}
-                                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
-                              >
-                                <div className={`w-4 h-4 border rounded flex items-center justify-center ${editedBooking.assignedTeam?.includes(member.id)
-                                  ? 'bg-primary border-primary'
-                                  : 'border-input'
-                                  }`}>
-                                  {editedBooking.assignedTeam?.includes(member.id) && (
-                                    <Check className="w-3 h-3 text-primary-foreground" />
-                                  )}
-                                </div>
-                                <span className="text-sm">{member.name}</span>
-                              </button>
-                            ))
+                            team.map(member => {
+                              const isSelected = editedBooking.assignedTeam?.includes(member.id);
+
+                              return (
+                                <button
+                                  key={member.id}
+                                  type="button"
+                                  onClick={() => toggleTeamMember(member.id)}
+                                  className="w-full px-3 py-2 flex items-center gap-2 text-sm hover:bg-muted text-left"
+                                >
+                                  <span
+                                    className={`w-4 h-4 rounded border flex items-center justify-center
+                    ${isSelected
+                                        ? 'bg-primary border-primary text-primary-foreground'
+                                        : 'border-input'
+                                      }`}
+                                  >
+                                    {isSelected && <Check className="w-3 h-3" />}
+                                  </span>
+
+                                  <span>{member.name}</span>
+                                </button>
+                              );
+                            })
                           )}
                         </div>
                       )}
@@ -545,43 +506,65 @@ const ManageBookings: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleSaveEdit} className="flex-1">Save Changes</Button>
-                    <Button onClick={cancelEdit} variant="outline" className="flex-1">Cancel</Button>
+                  <div className="flex gap-2 pt-4 justify-end">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={cancelEdit}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      onClick={handleSaveEdit}
+                      disabled={loading}
+                      className="min-w-[140px] flex items-center justify-center"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <label className="text-sm text-muted-foreground">Event</label>
+                    <Label className="text-sm text-muted-foreground">Event</Label>
                     <p className="font-medium">{selectedBooking.eventName}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground">Date</label>
+                      <Label className="text-sm text-muted-foreground">Date</Label>
                       <p className="font-medium">{new Date(selectedBooking.date).toLocaleDateString()}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground">Type</label>
+                      <Label className="text-sm text-muted-foreground">Type</Label>
                       <p className="font-medium">{selectedBooking.eventType}</p>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Venue</label>
+                    <Label className="text-sm text-muted-foreground">Venue</Label>
                     <p className="font-medium">{selectedBooking.venue}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm text-muted-foreground">Total Amount</label>
+                      <Label className="text-sm text-muted-foreground">Total Amount</Label>
                       <p className="font-medium text-primary">{formatPrice(selectedBooking.totalAmount)}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground">Paid Amount</label>
+                      <Label className="text-sm text-muted-foreground">Paid Amount</Label>
                       <p className="font-medium text-green-600">{formatPrice(selectedBooking.paidAmount)}</p>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Status</label>
+                    <Label className="text-sm text-muted-foreground">Status</Label>
                     <p className={`inline-block mt-1 text-xs px-3 py-1 rounded-full ${selectedBooking.status === 'approved' ? 'bg-green-100 text-green-700' :
                       selectedBooking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                         selectedBooking.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
@@ -593,12 +576,12 @@ const ManageBookings: React.FC = () => {
                   </div>
                   {selectedBooking.notes && (
                     <div>
-                      <label className="text-sm text-muted-foreground">Notes</label>
+                      <Label className="text-sm text-muted-foreground">Notes</Label>
                       <p className="text-sm">{selectedBooking.notes}</p>
                     </div>
                   )}
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Assigned Team</label>
+                    <Label className="text-sm text-muted-foreground mb-2 block">Assigned Team</Label>
                     {selectedBooking.assignedTeam && selectedBooking.assignedTeam.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {selectedBooking.assignedTeam.map(memberId => (
@@ -620,5 +603,3 @@ const ManageBookings: React.FC = () => {
     </div>
   );
 };
-
-export default ManageBookings;
