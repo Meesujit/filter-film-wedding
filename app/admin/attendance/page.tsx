@@ -1,12 +1,11 @@
 'use client';
 import { useEffect, useState } from "react";
-import { Calendar, CheckCircle, Clock, Search, Trash2, UserCheck, UserX, AlertCircle, Loader2, Download, Filter } from "lucide-react";
+import { Calendar, CheckCircle, Clock, Search, Trash2, UserCheck, UserX, AlertCircle, Loader2, Download, Filter, Loader } from "lucide-react";
 import { Attendance } from "@/app/types/attendance";
 import { User } from "@/app/types/user";
 import Image from "next/image";
-
-
-
+import toast from "react-hot-toast";
+import DeleteModal from "@/app/src/components/common/modal/delete-modal";
 
 const AdminAttendancePage = () => {
     const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -17,6 +16,10 @@ const AdminAttendancePage = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterStatus, setFilterStatus] = useState<string>('all');
+
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     // Fetch attendance records
     useEffect(() => {
@@ -34,12 +37,11 @@ const AdminAttendancePage = () => {
             const response = await fetch('/api/admin/attendance');
             if (!response.ok) throw new Error('Failed to fetch attendance');
             const data = await response.json();
-            console.log('📊 Attendance data received:', data);
             setAttendance(data.attendance || []);
             setError(null);
         } catch (err) {
             setError('Failed to load attendance records');
-            console.error('❌ Error fetching attendance:', err);
+            toast.error('Failed to load attendance records');
         } finally {
             setLoading(false);
         }
@@ -50,7 +52,6 @@ const AdminAttendancePage = () => {
             const response = await fetch('/api/admin/team');
             if (!response.ok) throw new Error('Failed to fetch team members');
             const data = await response.json();
-            console.log('👥 Team data received:', data);
             // Handle both 'members' and 'team' property names
             const members = data.members || data.team || [];
             // Map the data to match our interface
@@ -61,9 +62,9 @@ const AdminAttendancePage = () => {
                 photo: member.image || member.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`,
                 email: member.email,
             }));
-            console.log('✅ Mapped team members:', mappedMembers);
             setTeamMembers(mappedMembers);
         } catch (err) {
+            toast.error('Error loading team members');
             console.error('❌ Error loading team members:', err);
         }
     };
@@ -86,7 +87,11 @@ const AdminAttendancePage = () => {
                     }),
                 });
 
-                if (!response.ok) throw new Error('Failed to update attendance');
+                if (!response.ok) {
+                    toast.error('Failed to update attendance');
+                    throw new Error('Failed to update attendance');
+                };
+                toast.success('Attendance updated');
                 await fetchAttendance();
             } else {
                 // Create new record
@@ -103,13 +108,16 @@ const AdminAttendancePage = () => {
                     }),
                 });
 
-                if (!response.ok) throw new Error('Failed to create attendance');
+                if (!response.ok) {
+                    toast.error('Failed to create attendance');
+                    throw new Error('Failed to create attendance');
+                }
                 await fetchAttendance();
             }
 
-            showToast('Success', `Marked as ${status}`);
+            toast.success('Attendance marked');
         } catch (err) {
-            showToast('Error', 'Failed to update attendance', true);
+            toast.error('Failed to mark attendance');
             console.error(err);
         } finally {
             setSaving(false);
@@ -125,38 +133,41 @@ const AdminAttendancePage = () => {
             });
 
             if (!response.ok) throw new Error('Failed to update time');
+            toast.success('Time updated');
             await fetchAttendance();
         } catch (err) {
-            showToast('Error', 'Failed to update time', true);
+            toast.error('Failed to update time');
             console.error(err);
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this attendance record?')) return;
+    const openDeleteModal = (id: string) => {
+        setDeleteId(id);
+        setDeleteOpen(true);
+    };
 
+
+    const handleDelete = async () => {
+        if (!deleteId) return;
+        setDeleting(true);
         try {
-            const response = await fetch(`/api/admin/attendance/${id}`, {
+            const response = await fetch(`/api/admin/attendance/${deleteId}`, {
                 method: 'DELETE',
             });
 
             if (!response.ok) throw new Error('Failed to delete attendance');
             await fetchAttendance();
-            showToast('Success', 'Attendance record deleted');
+            toast.success('Attendance deleted');
         } catch (err) {
-            showToast('Error', 'Failed to delete record', true);
-            console.error(err);
+            toast.error('Failed to delete attendance');
+            console.error('❌ Error deleting attendance:', err);
+        }finally {
+            setDeleting(false);
+            setDeleteOpen(false);
+            setDeleteId(null);
         }
     };
 
-    const showToast = (title: string, description: string, isError = false) => {
-        // Simple toast implementation - you can replace with your toast library
-        const toast = document.createElement('div');
-        toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${isError ? 'bg-red-500' : 'bg-emerald-500'} text-white`;
-        toast.innerHTML = `<div class="font-semibold">${title}</div><div class="text-sm">${description}</div>`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    };
 
     const getAttendanceForDate = () => {
         let filtered = attendance.filter(a => a.date === selectedDate);
@@ -212,14 +223,15 @@ const AdminAttendancePage = () => {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin text-muted mx-auto mb-4" />
-                    <p className="text-slate-600 font-medium">Loading attendance data...</p>
+                    <Loader className="w-10 h-10 animate-spin text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground font-medium">Loading attendance data...</p>
                 </div>
             </div>
         );
     }
 
     return (
+        <>
         <div className="min-h-screen p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
@@ -229,7 +241,7 @@ const AdminAttendancePage = () => {
                             <h1 className="text-4xl font-bold bg-popover-foreground bg-clip-text text-transparent mb-2">
                                 Team Attendance
                             </h1>
-                            <p className="text-slate-600">Track and manage team member attendance records</p>
+                            <p className="text-muted-foreground">Track and manage team member attendance records</p>
                         </div>
                         <button
                             onClick={exportToCSV}
@@ -428,7 +440,7 @@ const AdminAttendancePage = () => {
                                                                 }`}
                                                             title="Present"
                                                         >
-                                                            P
+                                                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'P'}
                                                         </button>
                                                         <button
                                                             onClick={() => handleMarkAttendance(member.id, 'absent')}
@@ -465,7 +477,7 @@ const AdminAttendancePage = () => {
                                                         </button>
                                                         {record && (
                                                             <button
-                                                                onClick={() => handleDelete(record.id)}
+                                                                onClick={() => openDeleteModal(record.id)}
                                                                 className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                                                 title="Delete"
                                                             >
@@ -510,6 +522,15 @@ const AdminAttendancePage = () => {
                 </div>
             </div>
         </div>
+        <DeleteModal
+            open={deleteOpen}
+            title="Delete Attendance Record"
+            description="Are you sure you want to delete this attendance record? This action cannot be undone."
+            onCancel={() => setDeleteOpen(false)}
+            onConfirm={handleDelete}
+            loading={deleting}
+        />
+        </>
     );
 };
 

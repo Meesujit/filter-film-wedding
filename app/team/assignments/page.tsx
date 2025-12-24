@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
 import { Input } from '@/app/src/components/ui/input';
 import { Button } from '@/app/src/components/ui/button';
+import toast from 'react-hot-toast';
 
 interface Booking {
   id: string;
@@ -36,7 +36,6 @@ const statusConfig = {
 };
 
 export default function AssignmentsPage() {
-  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [packages, setPackages] = useState<PackageInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +62,7 @@ export default function AssignmentsPage() {
       if (packagesRes.ok) setPackages(packagesData.packages || []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load your assignments',
-        variant: 'destructive'
-      });
+      toast.error('Failed to load data. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -123,13 +118,14 @@ export default function AssignmentsPage() {
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
-  const completedBookings = bookings.filter(b => b.status === 'completed').length;
-  const inProgressBookings = bookings.filter(b => b.status === 'in-progress').length;
+  // const completedBookings = bookings.filter(b => b.status === 'completed').length;
+  // const inProgressBookings = bookings.filter(b => b.status === 'in-progress').length;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <span className="text-muted-foreground ml-2">Loading...</span>
       </div>
     );
   }
@@ -232,21 +228,6 @@ export default function AssignmentsPage() {
       <div>
         <h1 className="font-heading text-3xl font-bold text-foreground">My Assignments</h1>
         <p className="text-muted-foreground">Events assigned to you</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl p-5 shadow-card border border-border">
-          <p className="text-sm text-muted-foreground mb-1">Total Assignments</p>
-          <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
-        </div>
-        <div className="bg-card rounded-xl p-5 shadow-card border border-border">
-          <p className="text-sm text-muted-foreground mb-1">In Progress</p>
-          <p className="text-2xl font-bold text-blue-600">{inProgressBookings}</p>
-        </div>
-        <div className="bg-card rounded-xl p-5 shadow-card border border-border">
-          <p className="text-sm text-muted-foreground mb-1">Completed</p>
-          <p className="text-2xl font-bold text-purple-600">{completedBookings}</p>
-        </div>
       </div>
 
       <div className="bg-card rounded-xl p-4 shadow-card">

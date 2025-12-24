@@ -28,8 +28,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log('🔐 User synced:', { email, role: user.role, id: user.id });
-
     // Create session cookie (5 days)
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(token, { expiresIn });

@@ -1,23 +1,25 @@
 'use client';
 
-import { useToast } from "@/app/hooks/use-toast";
+
 import { Package } from "@/app/types/package";
 import { Loader2, Check, X, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/app/src/components/ui/button";
+import toast from "react-hot-toast";
+import { set } from "react-hook-form";
 
 export default function CustomerPackagesPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchPackages();
   }, []);
 
   const fetchPackages = async () => {
+    setFetchingPackages(true);
     try {
       const response = await fetch('/api/admin/package');
       const data = await response.json();
@@ -26,12 +28,7 @@ export default function CustomerPackagesPage() {
         setPackages(Array.isArray(data.packages) ? data.packages : []);
       }
     } catch (error) {
-      console.error('Error fetching packages:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load packages',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load packages. Please try again later.');
     } finally {
       setFetchingPackages(false);
     }

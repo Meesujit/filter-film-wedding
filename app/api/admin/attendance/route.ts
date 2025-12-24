@@ -9,7 +9,6 @@ export async function GET(){
     }
     try {
         const attendance = await attendenceService.getAllAttendance();
-        console.log("Fetched attendance records:", attendance);
         return NextResponse.json({ attendance });
     } catch (error) {
         console.error("Error fetching attendance records:", error);

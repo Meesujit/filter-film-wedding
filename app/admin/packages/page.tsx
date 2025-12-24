@@ -7,6 +7,8 @@ import { Button } from '@/app/src/components/ui/button';
 import { Package } from '@/app/types/package';
 import { Input } from '@/app/src/components/ui/input';
 import { Textarea } from '@/app/src/components/ui/textarea';
+import toast from 'react-hot-toast';
+import DeleteModal from '@/app/src/components/common/modal/delete-modal';
 
 interface Props {
     initialPackages?: Package[];
@@ -21,6 +23,9 @@ export default function PackageManagement({ initialPackages }: Props) {
     const [loading, setLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isFetchingPackages, setIsFetchingPackages] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [localPreview, setLocalPreview] = useState<string | null>(null);
@@ -109,6 +114,11 @@ export default function PackageManagement({ initialPackages }: Props) {
         setIsModalOpen(true);
     };
 
+    const openDeleteModal = (id: string) => {
+        setDeleteId(id);
+        setDeleteOpen(true);
+    }
+
     /* ---------------------------------------------
        Image upload (ONLY on submit)
     ---------------------------------------------- */
@@ -189,36 +199,42 @@ export default function PackageManagement({ initialPackages }: Props) {
             resetForm();
             router.refresh();
 
-            alert(editingId ? 'Package updated successfully' : 'Package created successfully');
+            toast.success(`Package ${editingId ? 'updated' : 'created'} successfully`);
         } catch (error) {
             console.error(error);
-            alert('Something went wrong');
+            toast.error('Something went wrong');
         } finally {
             setLoading(false);
             setIsUploading(false);
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this package?')) return;
+    const handleDelete = async () => {
+        if (!deleteId) return;
+
+        setDeleting(true);
 
         try {
-            const response = await fetch(`/api/admin/package/${id}`, {
+            const response = await fetch(`/api/admin/package/${deleteId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             });
 
             if (response.ok) {
-                setPackages(prev => prev.filter(p => p.id !== id));
+                setPackages(prev => prev.filter(p => p.id !== deleteId));
                 router.refresh();
-                alert('Package deleted successfully');
+                toast.success('Package deleted successfully');
             } else {
                 const result = await response.json();
-                alert(result.error || 'Failed to delete package');
+                toast.error(result.error || 'Failed to delete package');
             }
         } catch (error) {
             console.error(error);
-            alert('Something went wrong');
+            toast.error('Failed to delete package');
+        } finally {
+            setDeleting(false);
+            setDeleteOpen(false);
+            setDeleteId(null);
         }
     };
 
@@ -233,205 +249,218 @@ export default function PackageManagement({ initialPackages }: Props) {
        Render
     ---------------------------------------------- */
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold">Manage Packages</h1>
-                    <p className="text-muted-foreground mt-1">
-                        Create and manage your service packages
-                    </p>
-                </div>
-                <Button variant="royal" onClick={() => openModal()}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Package
-                </Button>
-            </div>
 
-            <div className="grid gap-4">
-                {isFetchingPackages ? (
-                    <div className="h-72 flex flex-col items-center justify-center bg-card rounded-xl">
-                        <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                        Loading packages...
+        <>
+            <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold">Manage Packages</h1>
+                        <p className="text-muted-foreground mt-1">
+                            Create and manage your service packages
+                        </p>
                     </div>
-                ) : packages.length === 0 ? (
-                    <div className="h-72 flex flex-col items-center justify-center bg-card rounded-xl">
-                        No packages found
-                    </div>
-                ) : (
-                    packages.map(pkg => (
-                        <div key={pkg.id} className="bg-card rounded-xl shadow-card overflow-hidden">
-                            <div className="flex flex-col md:flex-row">
-                                <Image
-                                    src={pkg.preview}
-                                    alt={pkg.name}
-                                    width={192}
-                                    height={192}
-                                    className="w-full md:w-48 h-48 object-cover"
-                                />
-                                <div className="flex-1 p-6">
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div>
-                                            <h3 className="font-heading text-xl font-semibold text-foreground flex items-center gap-2">
-                                                {pkg.name}
-                                                {pkg.popular && (
-                                                    <span className="text-xs px-2 py-1 bg-gold text-maroon-dark rounded-full">Popular</span>
-                                                )}
-                                            </h3>
-                                            <p className="text-gold font-bold">{formatPrice(pkg.price)}</p>
+                    <Button variant="royal" onClick={() => openModal()}>
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Package
+                    </Button>
+                </div>
+
+                <div className="grid gap-4">
+                    {isFetchingPackages ? (
+                        <div className="h-72 flex flex-col items-center justify-center bg-card rounded-xl">
+                            <Loader2 className="w-8 h-8 animate-spin mb-2" />
+                            Loading packages...
+                        </div>
+                    ) : packages.length === 0 ? (
+                        <div className="h-72 flex flex-col items-center justify-center bg-card rounded-xl">
+                            No packages found
+                        </div>
+                    ) : (
+                        packages.map(pkg => (
+                            <div key={pkg.id} className="bg-card rounded-xl shadow-card overflow-hidden">
+                                <div className="flex flex-col md:flex-row">
+                                    <Image
+                                        src={pkg.preview}
+                                        alt={pkg.name}
+                                        width={192}
+                                        height={192}
+                                        className="w-full md:w-48 h-48 object-cover"
+                                    />
+                                    <div className="flex-1 p-6">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div>
+                                                <h3 className="font-heading text-xl font-semibold text-foreground flex items-center gap-2">
+                                                    {pkg.name}
+                                                    {pkg.popular && (
+                                                        <span className="text-xs px-2 py-1 bg-gold text-maroon-dark rounded-full">Popular</span>
+                                                    )}
+                                                </h3>
+                                                <p className="text-gold font-bold">{formatPrice(pkg.price)}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => openModal(pkg)}>
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => openDeleteModal(pkg.id)}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => openModal(pkg)}>
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(pkg.id)}>
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                        <p className="text-muted-foreground text-sm mb-3">{pkg.description}</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {pkg.deliverables.slice(0, 3).map((d, i) => (
+                                                <span key={i} className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                                                    {d}
+                                                </span>
+                                            ))}
+                                            {pkg.deliverables.length > 3 && (
+                                                <span className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                                                    +{pkg.deliverables.length - 3} more
+                                                </span>
+                                            )}
                                         </div>
-                                    </div>
-                                    <p className="text-muted-foreground text-sm mb-3">{pkg.description}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {pkg.deliverables.slice(0, 3).map((d, i) => (
-                                            <span key={i} className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
-                                                {d}
-                                            </span>
-                                        ))}
-                                        {pkg.deliverables.length > 3 && (
-                                            <span className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
-                                                +{pkg.deliverables.length - 3} more
-                                            </span>
-                                        )}
                                     </div>
                                 </div>
                             </div>
+                        ))
+                    )}
+                </div>
+
+                {/* MODAL */}
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <div className="bg-card w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl">
+                            <div className="flex justify-between items-center border-b px-6 py-4">
+                                <div>
+                                    <h2 className="text-lg font-bold">
+                                        {editingId ? 'Edit Package' : 'Create Package'}
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground">
+                                        {editingId ? 'Update package details' : 'Add a new package'}
+                                    </p>
+                                </div>
+                                <button onClick={() => setIsModalOpen(false)}>
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+                                <div className="border rounded-lg p-4">
+                                    <label className="text-sm font-medium block mb-2">
+                                        Package Preview Image
+                                    </label>
+                                    <div className="flex gap-4 items-center">
+                                        {(localPreview || formData.preview) && (
+                                            <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
+                                                <Image
+                                                    src={localPreview || formData.preview}
+                                                    alt="Preview"
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                                {isUploading && (<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                    <Loader2 className="w-6 h-6 animate-spin text-white" />
+                                                </div>)}
+                                            </div>
+                                        )}
+                                        <label className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-lg px-4 py-5 cursor-pointer">
+                                            <Upload className="w-6 h-6" />
+                                            Upload image
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                hidden
+                                                onChange={e => {
+                                                    const file = e.target.files?.[0] || null;
+                                                    setSelectedFile(file);
+                                                    if (file) {
+                                                        setLocalPreview(URL.createObjectURL(file));
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Package Name</label>
+                                    <Input
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="Royal Heritage"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Price (₹)</label>
+                                        <Input
+                                            required
+                                            type="number"
+                                            value={formData.price}
+                                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                            placeholder="500000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Duration</label>
+                                        <Input
+                                            required
+                                            value={formData.duration}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            placeholder="3 Days"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Description</label>
+                                    <Textarea
+                                        required
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        placeholder="Package description..."
+                                        rows={3}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Deliverables (one per line)</label>
+                                    <Textarea
+                                        required
+                                        value={formData.deliverables}
+                                        onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
+                                        placeholder="3 Days Full Coverage&#10;Cinematic Wedding Film&#10;500+ Edited Photos"
+                                        rows={4}
+                                    />
+                                </div>
+
+                                <label className="flex gap-2 items-center">
+                                    <input type="checkbox" checked={formData.popular} onChange={e => setFormData({ ...formData, popular: e.target.checked })} />
+                                    Mark as Popular
+                                </label>
+
+                                <div className="flex justify-end gap-3">
+                                    <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button variant="royal" type="submit" disabled={loading}>
+                                        {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                                        {editingId ? 'Update Package' : 'Create Package'}
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
-                    ))
+                    </div>
                 )}
             </div>
 
-            {/* MODAL */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-card w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl">
-                        <div className="flex justify-between items-center border-b px-6 py-4">
-                            <div>
-                                <h2 className="text-lg font-bold">
-                                    {editingId ? 'Edit Package' : 'Create Package'}
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {editingId ? 'Update package details' : 'Add a new package'}
-                                </p>
-                            </div>
-                            <button onClick={() => setIsModalOpen(false)}>
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
+            <DeleteModal
+                open={deleteOpen}
+                loading={deleting}
+                onCancel={() => setDeleteOpen(false)}
+                onConfirm={handleDelete}
+                title="Delete Package"
+                description="Are you sure you want to delete this package? This action cannot be undone."
+            />
 
-                        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
-                            <div className="border rounded-lg p-4">
-                                <label className="text-sm font-medium block mb-2">
-                                    Package Preview Image
-                                </label>
-                                <div className="flex gap-4 items-center">
-                                    {(localPreview || formData.preview) && (
-                                        <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
-                                            <Image
-                                                src={localPreview || formData.preview}
-                                                alt="Preview"
-                                                fill
-                                                className="object-cover"
-                                            />
-                                            {isUploading && (<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                                <Loader2 className="w-6 h-6 animate-spin text-white" />
-                                            </div>)}
-                                        </div>
-                                    )}
-                                    <label className="flex-1 flex flex-col items-center justify-center border border-dashed rounded-lg px-4 py-5 cursor-pointer">
-                                        <Upload className="w-6 h-6" />
-                                        Upload image
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            hidden
-                                            onChange={e => {
-                                                const file = e.target.files?.[0] || null;
-                                                setSelectedFile(file);
-                                                if (file) {
-                                                    setLocalPreview(URL.createObjectURL(file));
-                                                }
-                                            }}
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Package Name</label>
-                                <Input
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="Royal Heritage"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Price (₹)</label>
-                                    <Input
-                                        required
-                                        type="number"
-                                        value={formData.price}
-                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        placeholder="500000"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Duration</label>
-                                    <Input
-                                        required
-                                        value={formData.duration}
-                                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                                        placeholder="3 Days"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Description</label>
-                                <Textarea
-                                    required
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    placeholder="Package description..."
-                                    rows={3}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Deliverables (one per line)</label>
-                                <Textarea
-                                    required
-                                    value={formData.deliverables}
-                                    onChange={(e) => setFormData({ ...formData, deliverables: e.target.value })}
-                                    placeholder="3 Days Full Coverage&#10;Cinematic Wedding Film&#10;500+ Edited Photos"
-                                    rows={4}
-                                />
-                            </div>
-
-                            <label className="flex gap-2 items-center">
-                                <input type="checkbox" checked={formData.popular} onChange={e => setFormData({ ...formData, popular: e.target.checked })} />
-                                Mark as Popular
-                            </label>
-
-                            <div className="flex justify-end gap-3">
-                                <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)}>
-                                    Cancel
-                                </Button>
-                                <Button variant="royal" type="submit" disabled={loading}>
-                                    {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                                    {editingId ? 'Update Package' : 'Create Package'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </div>
+        </>
     );
 }
