@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Calendar, Clock, Users, TrendingUp, Loader2 } from 'lucide-react';
-import { useAuth } from '@/app/src/context/AuthContext';
+
 import { Attendance } from '@/app/types/attendance';
 import { Button } from '@/app/src/components/ui/button';
+import { useAuth } from '@/app/lib/firebase/auth-context';
 
 
 export default function TeamAttendancePage() {
@@ -29,7 +30,7 @@ export default function TeamAttendancePage() {
         setAttendance(data.attendance);
 
         const todayAtt = data.attendance.find(
-          (a: Attendance) => a.memberId === user.id && a.date === today
+          (a: Attendance) => a.memberId === user?.id && a.date === today
         );
 
         setTodayRecord(todayAtt || null);
@@ -52,8 +53,8 @@ export default function TeamAttendancePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          memberId: user.id,
-          memberName: user.name,
+          memberId: user?.id,
+          memberName: user?.name,
           date: today,
           status: 'present',
         }),
@@ -141,7 +142,7 @@ export default function TeamAttendancePage() {
     return (
       recordDate.getMonth() === selectedMonth &&
       recordDate.getFullYear() === selectedYear &&
-      record.memberId === user.id
+      record.memberId === user?.id
     );
   });
 

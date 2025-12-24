@@ -1,12 +1,14 @@
-import { auth } from "@/app/auth";
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 import { redirect } from "next/navigation";
+
+export const dynamic = 'force-dynamic';
 
 export default async function AuthCallbackPage({
   searchParams,
 }: {
   searchParams: { callbackUrl?: string };
 }) {
-  const session = await auth();
+  const session = await getServerSession();
 
   if (!session) {
     redirect("/signin");
@@ -18,7 +20,7 @@ export default async function AuthCallbackPage({
   }
 
   // Otherwise, redirect based on role
-  const role = session.user.role;
+  const role = session.role;
 
   switch (role) {
     case "admin":

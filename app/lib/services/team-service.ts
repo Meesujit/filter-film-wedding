@@ -1,4 +1,4 @@
-import { driveService } from '../google-drive';
+import { driveService } from '../google-drive.server';
 import { TeamMember } from '@/app/types/team';
 import { v4 as uuidv4 } from 'uuid';
 

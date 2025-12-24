@@ -1,11 +1,11 @@
-import { auth } from "@/app/auth";
+    import { getServerSession } from "@/app/lib/firebase/server-auth";
 import { settingService } from "@/app/lib/services/setting-service";
 import { NextResponse } from "next/server";
 
 // GET all settings
 export async function GET() {
-    const session = await auth();
-    if (!session || session.user.role !== "admin") {
+    const session = await getServerSession();
+    if (!session || session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
@@ -22,8 +22,8 @@ export async function GET() {
 }
 // POST create settings
 export async function POST(req: Request) {
-    const session = await auth();
-    if (!session || session.user.role !== "admin") {
+    const session = await getServerSession();
+    if (!session || session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
@@ -52,8 +52,8 @@ export async function POST(req: Request) {
 
 // PUT update settings
 export async function PUT(req: Request) {
-    const session = await auth();
-    if (!session || session.user.role !== "admin") {
+    const session = await getServerSession();
+    if (!session || session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
@@ -84,8 +84,8 @@ export async function PUT(req: Request) {
 
 // DELETE all settings
 export async function DELETE() {
-    const session = await auth();
-    if (!session || session.user.role !== "admin") {
+    const session = await getServerSession();
+    if (!session || session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {

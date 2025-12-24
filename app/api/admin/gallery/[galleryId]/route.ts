@@ -1,4 +1,5 @@
-import { auth } from "@/app/auth";
+
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 import { galleryService } from "@/app/lib/services/gallery-service";
 import { NextResponse } from "next/server";
 
@@ -7,9 +8,9 @@ export async function GET(
     req: Request,
     context: { params: Promise<{ galleryId: string }> }
 ) {
-    const session = await auth();
-    if (!session || !["admin", "customer", "team"].includes(session.user.role)) {
-        return NextResponse.json({ error: `Unauthorized not having required role${session ? `: ${session.user.role}` : ''}` }, { status: 401 });
+    const session = await getServerSession();
+    if (!session || !["admin", "customer", "team"].includes(session.role)) {
+        return NextResponse.json({ error: `Unauthorized not having required role${session ? `: ${session.role}` : ''}` }, { status: 401 });
     }
     try {
         const { galleryId } = await context.params;
@@ -31,8 +32,8 @@ export async function PATCH(
     req: Request,
     context: { params: Promise<{ galleryId: string }> }
 ) {
-    const session = await auth();
-    if (!session || session.user.role !== "admin") {
+    const session = await getServerSession();
+    if (!session || session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
@@ -56,8 +57,8 @@ export async function DELETE(
     req: Request,
     context: { params: Promise<{ galleryId: string }> }
 ) {
-    const session = await auth();
-    if (!session || session.user.role !== "admin") {
+    const session = await getServerSession();
+    if (!session || session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {

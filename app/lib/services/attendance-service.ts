@@ -1,4 +1,4 @@
-import { driveService } from "../google-drive";
+import { driveService } from "../google-drive.server";
 import { Attendance } from "@/app/types/attendance";
 import { v4 as uuidv4 } from "uuid";
 

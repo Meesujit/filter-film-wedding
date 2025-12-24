@@ -6,8 +6,6 @@ import {
   Users,
   Settings,
   User,
-  CreditCard,
-  Upload,
 } from "lucide-react";
 
 interface NavItem {

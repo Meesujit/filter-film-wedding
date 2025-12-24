@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function AboutSection() {
   return (
-    <section className="py-9">
+    <section className="py-20 lg:py-20" id="about">
       <div className="container mx-auto px-4 flex flex-col gap-10">
         <SectionHeader 
           title="About Filter Film Studio" 

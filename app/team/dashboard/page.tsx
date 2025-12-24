@@ -2,7 +2,7 @@
 "use client"
 import Link from 'next/link';
 import { Calendar, Package, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/app/src/context/AuthContext';
+import { useAuth } from '@/app/lib/firebase/auth-context';
 
 const mockTeamData = {
   assignedBookings: 8,

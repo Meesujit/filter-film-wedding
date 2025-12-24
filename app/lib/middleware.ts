@@ -1,39 +1,30 @@
-import { auth } from "@/app/auth";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const session = req.auth;
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
   // Public routes
-  const publicRoutes = ["/", "/signin", "/error"];
+  const publicRoutes = ['/signin', '/signup', '/forgot-password', '/api/auth'];
   
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
+  if (publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/') {
     return NextResponse.next();
   }
 
-  // Redirect to sign-in if not authenticated
-  if (!session) {
-    const signInUrl = new URL("/signin", req.url);
-    signInUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(signInUrl);
+  // Get session cookie
+  const sessionCookie = request.cookies.get('firebase-session')?.value;
+
+  if (!sessionCookie) {
+    return NextResponse.redirect(new URL('/signin', request.url));
   }
 
-  const userRole = session.user.role;
-
-  // Admin-only routes
-  if (pathname.startsWith("/admin") && userRole !== "admin") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-
-  // Team routes (admin and team can access)
-  if (pathname.startsWith("/team") && !["admin", "team"].includes(userRole)) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-
+  // For protected routes, let the page component handle role checks
+  // The middleware just ensures they have a valid session
   return NextResponse.next();
-});
+}
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };

@@ -1,32 +1,31 @@
-'use client'
+'use client';
+
 import { useState } from 'react';
 import { Menu, X, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react'; // Import from next-auth
-import { Button } from '../ui/button';
 import Link from 'next/link';
-import { cn } from '@/app/lib/utils';
 import Image from 'next/image';
+import { Button } from '../ui/button';
+import { cn } from '@/app/lib/utils';
+import { useAuth } from '@/app/lib/firebase/auth-context';
 
 const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/packages', label: 'Packages' },
-  { href: '/gallery', label: 'Gallery' },
-  { href: '/our-team', label: 'Our Team' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/#home', label: 'Home' },
+  { href: '/#about', label: 'About' },
+  { href: '/#packages', label: 'Packages' },
+  { href: '/#team', label: 'Our Founder' },
+  { href: '/#gallery', label: 'Gallery' },
+  { href: '/#contact', label: 'Contact' },
 ];
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
-  const { data: session, status } = useSession(); // Use NextAuth session
-
-  const isAuthenticated = status === 'authenticated';
-  const user = session?.user;
 
   const getDashboardLink = () => {
     if (!user?.role) return '/signin';
+    
     switch (user.role) {
       case 'admin':
         return '/admin/dashboard';
@@ -40,8 +39,14 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/' });
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
+
+  const isAuthenticated = !!user;
 
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -49,15 +54,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2">
-              <Image 
-                src="/logo/filter-film-logo.svg"
-                alt="Filter Film Studio Logo" 
-                width={150}
-                height={40}
-                className=' w-60 h-32 object-cover'
-              />
-            </div>
+            <Image
+              src="/logo/filter-film-logo.svg"
+              alt="Filter Film Studio Logo"
+              width={150}
+              height={40}
+              className="w-60 h-32 object-cover"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -80,7 +83,7 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-4">
-            {status === 'loading' ? (
+            {loading ? (
               <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />
             ) : isAuthenticated ? (
               <>
@@ -102,77 +105,70 @@ export default function Navbar() {
                 </Button>
               </Link>
             )}
-            <Link href="/packages">
-              <Button className="bg-gradient-royal hover:opacity-90 transition-opacity">
-                Explore Packages
-              </Button>
+            <Link href="/#packages">
+              <Button className="bg-gradient-royal">Explore Packages</Button>
             </Link>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="lg:hidden p-2 text-foreground"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X /> : <Menu />}
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Menu */}
         {isOpen && (
-          <div className="lg:hidden py-4 border-t border-border animate-fade-in">
-            <div className="flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    'px-4 py-3 rounded-lg text-lg font-bold transition-colors',
-                    pathname === link.href
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-muted'
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="flex flex-col gap-2 mt-4 px-4">
-                {status === 'loading' ? (
-                  <div className="h-10 bg-muted animate-pulse rounded-md" />
-                ) : isAuthenticated ? (
-                  <>
-                    <Link href={getDashboardLink()} onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full gap-2">
-                        <User className="w-4 h-4" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => { 
-                        handleLogout(); 
-                        setIsOpen(false); 
-                      }}
-                      className="w-full"
-                    >
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <Link href="/signin" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full gap-2">
-                      <User className="w-4 h-4" />
-                      Login
-                    </Button>
-                  </Link>
+          <div className="lg:hidden flex flex-col gap-2 py-4 border-t border-border">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  'text-lg font-bold transition-colors hover:text-primary py-2 px-2 rounded-md',
+                  pathname === link.href ? 'text-primary bg-muted' : 'text-muted-foreground'
                 )}
-                <Link href="/book" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full bg-gradient-royal">Book Now</Button>
+              >
+                {link.label}
+              </Link>
+            ))}
+            
+            <div className="border-t border-border my-2"></div>
+            
+            {loading ? (
+              <div className="h-9 w-full bg-muted animate-pulse rounded-md" />
+            ) : isAuthenticated ? (
+              <div className="space-y-2">
+                <Link href={getDashboardLink()} onClick={() => setIsOpen(false)}>
+                  <Button variant="outline" size="sm" className="gap-2 w-full">
+                    <User className="w-4 h-4" />
+                    Dashboard
+                  </Button>
                 </Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                >
+                  Logout
+                </Button>
               </div>
-            </div>
+            ) : (
+              <Link href="/signin" onClick={() => setIsOpen(false)}>
+                <Button variant="outline" size="sm" className="gap-2 w-full">
+                  <User className="w-4 h-4" />
+                  Login
+                </Button>
+              </Link>
+            )}
+            
+            <Link href="/packages" onClick={() => setIsOpen(false)}>
+              <Button className="bg-gradient-royal w-full">Explore Packages</Button>
+            </Link>
           </div>
         )}
       </nav>

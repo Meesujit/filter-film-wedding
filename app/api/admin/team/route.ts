@@ -1,12 +1,12 @@
-import { auth } from "@/app/auth";
-import { userService } from "@/app/lib/services/user-service";
+import { getServerSession } from "@/app/lib/firebase/server-auth";
+import { userService } from "@/app/lib/services/user-service.server";
 import { NextResponse } from "next/server";
 
 // GET all team members
 export async function GET() {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -24,9 +24,9 @@ export async function GET() {
 
 // POST create new team member
 export async function POST(req: Request) {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

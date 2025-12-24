@@ -1,4 +1,4 @@
-import { driveService } from "../google-drive";
+import { driveService } from "../google-drive.server";
 import { Booking } from "@/app/types/booking";
 import { v4 as uuidv4 } from "uuid";
 
@@ -6,7 +6,6 @@ export const bookingService = {
     async getAllBookings(): Promise<Booking[]> {
         try{
             const bookings = await driveService.getCollection<Booking>("bookings");
-            console.log("Bookings from Drive:", bookings);
             return bookings;
         } catch (error) {
             console.error("Error fetching bookings:", error);

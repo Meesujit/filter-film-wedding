@@ -1,11 +1,13 @@
-import { auth } from "@/app/auth";
+
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 import { imageService } from "@/app/lib/services/image-service";
+import { get } from "http";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

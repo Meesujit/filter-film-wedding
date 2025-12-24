@@ -1,9 +1,9 @@
 // scripts/init-drive-db.ts
-import { driveService } from '@/app/lib/google-drive';
+import { driveService } from '@/app/lib/google-drive.server';
 
 async function initDatabase() {
   const initialData = {
-    attendance: [],
+    contact: [],
   };
 
   for (const [collection, data] of Object.entries(initialData)) {

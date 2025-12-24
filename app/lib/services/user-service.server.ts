@@ -1,4 +1,5 @@
-import { driveService } from '../google-drive';
+import 'server-only';
+import { driveService } from '../google-drive.server';
 import { User, UserRole } from '@/app/types/user';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -6,7 +7,6 @@ export const userService = {
   async getAllUsers(): Promise<User[]> {
     try {
       const users = await driveService.getCollection<User>('users');
-      console.log("All users from Drive:", users);
       return users;
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -18,7 +18,6 @@ export const userService = {
     try {
       const users = await this.getAllUsers();
       const user = users.find(user => user.email.toLowerCase() === email.toLowerCase());
-      console.log(`User found for ${email}:`, user);
       return user || null;
     } catch (error) {
       console.error("Error finding user by email:", error);
@@ -30,7 +29,6 @@ export const userService = {
     try {
       const users = await this.getAllUsers();
       const user = users.find(user => user.id === id);
-      console.log(`User found for ID ${id}:`, user);
       return user || null;
     } catch (error) {
       console.error("Error finding user by ID:", error);

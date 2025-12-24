@@ -1,8 +1,8 @@
 'use client';
 
-import { useAuth } from '@/app/src/context/AuthContext';
 import Image from 'next/image';
 import { ShieldCheck, Mail, User } from 'lucide-react';
+import { useAuth } from '@/app/lib/firebase/auth-context';
 
 const CustomerProfile = () => {
   const { user } = useAuth();

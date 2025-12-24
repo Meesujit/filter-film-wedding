@@ -1,4 +1,4 @@
-import { driveService } from "../google-drive";
+import { driveService } from "../google-drive.server";
 import { Gallery } from "@/app/types/gallery";
 import { v4 as uuidv4 } from "uuid";
 
@@ -6,7 +6,6 @@ export const galleryService = {
     async getAllGalleries(): Promise<Gallery[]> {
         try{
             const gallery = await driveService.getCollection<Gallery>("gallery");
-            console.log("Galleries from Drive:", gallery);
             return gallery;
         } catch (error) {
             console.error("Error fetching galleries:", error);

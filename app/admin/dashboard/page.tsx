@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { Calendar, Image, Users, TrendingUp, ArrowRight, Package2, IndianRupee, Loader2 } from 'lucide-react';
-import { useAuth } from '@/app/src/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { Package } from '@/app/types/package';
 import { Booking } from '@/app/types/booking';
 import { Gallery } from '@/app/types/gallery';
 import { User } from '@/app/types/user';
+import { useAuth } from '@/app/lib/firebase/auth-context';
 
 const formatPrice = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
