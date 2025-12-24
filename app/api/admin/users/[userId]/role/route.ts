@@ -1,7 +1,8 @@
-import { auth } from "@/app/auth";
-import { userService } from "@/app/lib/services/user-service";
+
+import { userService } from "@/app/lib/services/user-service.server";
 import { NextResponse } from "next/server";
 import { UserRole } from "@/app/types/user";
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 
 export async function PATCH(
   req: Request,
@@ -10,7 +11,8 @@ export async function PATCH(
   // ✅ MUST await params in Next 15+
   const { userId } = await context.params;
 
-  const session = await auth();
+  const session = await getServerSession();
+
 
   // Authentication
   if (!session) {
@@ -21,7 +23,7 @@ export async function PATCH(
   }
 
   // Authorization
-  if (session.user.role !== "admin") {
+  if (session.role !== "admin") {
     return NextResponse.json(
       { error: "Forbidden - Admin only" },
       { status: 403 }
@@ -29,7 +31,7 @@ export async function PATCH(
   }
 
   // Admin cannot update self
-  if (session.user.id === userId) {
+  if (session.id === userId) {
     return NextResponse.json(
       { error: "You cannot change your own role" },
       { status: 400 }

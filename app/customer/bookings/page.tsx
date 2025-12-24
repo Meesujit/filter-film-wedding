@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Package, Loader2, Plus, X, Type, ArrowLeft, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/app/hooks/use-toast';
 import { Button } from '@/app/src/components/ui/button';

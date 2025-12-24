@@ -1,10 +1,10 @@
-import { auth } from "@/app/auth";
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 import { attendenceService } from "@/app/lib/services/attendance-service";
 import { NextResponse } from "next/server";
 
 export async function GET(){
-    const session = await auth();
-    if (!session || (session.user.role !== "admin" && session.user.role !== "team")) {
+    const session = await getServerSession();
+    if (!session || (session.role !== "admin" && session.role !== "team")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
@@ -21,8 +21,8 @@ export async function GET(){
 }
 
 export async function POST(req: Request) {
-    const session = await auth();
-    if (!session || session.user.role !== "team") {
+    const session = await getServerSession();
+    if (!session || session.role !== "team") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {

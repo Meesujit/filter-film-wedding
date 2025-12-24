@@ -1,10 +1,10 @@
 // /api/admin/booking/route.ts
-import { auth } from "@/app/auth";
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 import { bookingService } from "@/app/lib/services/booking-service";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-    const session = await auth();
+    const session = await getServerSession();
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -13,22 +13,21 @@ export async function GET() {
         let bookings;
         
         // Admin can see all bookings
-        if (session.user.role === "admin") {
+        if (session.role === "admin") {
             bookings = await bookingService.getAllBookings();
         } 
         // Customers can only see their own bookings
-        else if (session.user.role === "customer") {
-            bookings = await bookingService.getBookingsByUserId(session.user.id);
+        else if (session.role === "customer") {
+            bookings = await bookingService.getBookingsByUserId(session.id);
         }
         // Team members can ONLY see bookings assigned to them
-        else if (session.user.role === "team") {
-            bookings = await bookingService.getBookingsByAssignedTeam(session.user.id);
+        else if (session.role === "team") {
+            bookings = await bookingService.getBookingsByAssignedTeam(session.id);
         }
         else {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         
-        console.log("Fetched bookings:", bookings);
         return NextResponse.json({ bookings });
     } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -40,13 +39,13 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-    const session = await auth();
+    const session = await getServerSession();
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
     // Only customers and admins can create bookings
-    if (session.user.role !== "customer" && session.user.role !== "admin") {
+    if (session.role !== "customer" && session.role !== "admin") {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
@@ -63,7 +62,7 @@ export async function POST(req: Request) {
         
         // Create new booking - NO assignedTeam during creation
         const newBooking = await bookingService.createBooking({
-            userId: session.user.id,
+            userId: session.id,
             packageId: data.packageId,
             eventType: data.eventType,
             eventName: data.eventName,

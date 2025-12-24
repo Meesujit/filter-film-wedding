@@ -1,13 +1,13 @@
 // /api/bookings/[bookingId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/auth";
 import { bookingService } from "@/app/lib/services/booking-service";
+import { getServerSession } from "@/app/lib/firebase/server-auth";
 
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ bookingId: string }> }
 ) {
-  const session = await auth();
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -22,8 +22,8 @@ export async function GET(
     }
 
     if (
-      session.user.role === "customer" &&
-      booking.userId !== session.user.id
+      session.role === "customer" &&
+      booking.userId !== session.id
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -43,7 +43,7 @@ export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ bookingId: string }> }
 ) {
-  const session = await auth();
+  const session = await getServerSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -58,7 +58,7 @@ export async function PATCH(
     }
 
     // Admin
-    if (session.user.role === "admin") {
+    if (session.role === "admin") {
       const updatedBooking = await bookingService.updateBooking(
         bookingId,
         updates
@@ -67,8 +67,8 @@ export async function PATCH(
     }
 
     // Customer
-    if (session.user.role === "customer") {
-      if (existingBooking.userId !== session.user.id) {
+    if (session.role === "customer") {
+      if (existingBooking.userId !== session.id) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
@@ -95,7 +95,7 @@ export async function PATCH(
     }
 
     // Team
-    if (session.user.role === "team") {
+    if (session.role === "team") {
       const allowedUpdates = {
         status: updates.status,
         assignedTeam: updates.assignedTeam,
@@ -122,9 +122,9 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ bookingId: string }> }
 ) {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

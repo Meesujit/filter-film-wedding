@@ -1,4 +1,4 @@
-import { driveService } from "../google-drive";
+import { driveService } from "../google-drive.server";
 import { Package } from "@/app/types/package";
 import { v4 as uuidv4 } from "uuid";
 
@@ -6,7 +6,6 @@ export const packageService = {
     async getAllPackages(): Promise<Package[]> {
         try{
             const packages = await driveService.getCollection<Package>("packages");
-            console.log("Packages from Drive:", packages);
             return packages;
         } catch (error) {
             console.error("Error fetching packages:", error);

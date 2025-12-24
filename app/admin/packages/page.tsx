@@ -7,7 +7,6 @@ import { Button } from '@/app/src/components/ui/button';
 import { Package } from '@/app/types/package';
 import { Input } from '@/app/src/components/ui/input';
 import { Textarea } from '@/app/src/components/ui/textarea';
-import { is } from 'react-day-picker/locale';
 
 interface Props {
     initialPackages?: Package[];
@@ -59,7 +58,9 @@ export default function PackageManagement({ initialPackages }: Props) {
     const fetchPackages = async () => {
         setIsFetchingPackages(true);
         try {
-            const response = await fetch('/api/admin/package');
+            const response = await fetch('/api/admin/package', {
+                credentials: 'include',
+            });
             const data = await response.json();
 
             if (response.ok && data.packages) {
@@ -122,6 +123,7 @@ export default function PackageManagement({ initialPackages }: Props) {
         const response = await fetch('/api/admin/upload-image', {
             method: 'POST',
             body: formDataUpload,
+            credentials: 'include',
         });
 
         if (!response.ok) {
@@ -168,6 +170,7 @@ export default function PackageManagement({ initialPackages }: Props) {
                     method: editingId ? 'PATCH' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(packageData),
+                    credentials: 'include',
                 }
             );
 
@@ -202,6 +205,7 @@ export default function PackageManagement({ initialPackages }: Props) {
         try {
             const response = await fetch(`/api/admin/package/${id}`, {
                 method: 'DELETE',
+                credentials: 'include',
             });
 
             if (response.ok) {

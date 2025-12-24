@@ -1,4 +1,4 @@
-import { driveService } from "../google-drive";
+import { driveService } from "../google-drive.server";
 import { Setting } from "@/app/types/setting";
 import { v4 as uuidv4 } from "uuid";
 

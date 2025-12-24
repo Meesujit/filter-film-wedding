@@ -1,9 +1,9 @@
-import { auth } from "@/app/auth";
 import { redirect } from "next/navigation";
 import { UserRole } from "@/app/types/user";
+import { getServerSession } from "./firebase/server-auth";
 
 export async function requireAuth() {
-  const session = await auth();
+  const session = await getServerSession();
   if (!session) {
     redirect("/signin");
   }
@@ -13,7 +13,7 @@ export async function requireAuth() {
 export async function requireRole(allowedRoles: UserRole[]) {
   const session = await requireAuth();
   
-  if (!allowedRoles.includes(session.user.role)) {
+  if (!allowedRoles.includes(session.role)) {
     redirect("/unauthorized");
   }
   
@@ -21,8 +21,8 @@ export async function requireRole(allowedRoles: UserRole[]) {
 }
 
 export async function checkRole(role: UserRole) {
-  const session = await auth();
-  return session?.user.role === role;
+  const session = await getServerSession();
+  return session?.role === role;
 }
 
 export async function isAdmin() {
@@ -30,6 +30,6 @@ export async function isAdmin() {
 }
 
 export async function isTeam() {
-  const session = await auth();
-  return session?.user.role === "team" || session?.user.role === "admin";
+  const session = await getServerSession();
+  return session?.role === "team" || session?.role === "admin";
 }

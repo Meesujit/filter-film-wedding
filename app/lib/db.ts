@@ -1,4 +1,4 @@
-import { driveService } from "./google-drive";
+import { driveService } from "./google-drive.server";
 
 export async function getUsers() {
     return driveService.getCollection('users');

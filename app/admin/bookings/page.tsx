@@ -181,7 +181,7 @@ const ManageBookings: React.FC = () => {
 
   const handleSaveEdit = async () => {
     if (!editedBooking) return;
-
+    setLoading(true);
     try {
       const response = await fetch(`/api/admin/booking/${editedBooking.id}`, {
         method: 'PATCH',
@@ -223,6 +223,8 @@ const ManageBookings: React.FC = () => {
         description: 'Failed to update booking',
         variant: 'destructive'
       });
+    }finally{
+      setLoading(false);
     }
   };
 

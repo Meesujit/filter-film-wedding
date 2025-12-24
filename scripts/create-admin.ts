@@ -1,4 +1,4 @@
-import { userService } from '@/app/lib/services/user-service';
+import { userService } from '@/app/lib/services/user-service.server';
 
 async function createAdmin() {
   const adminEmail = process.env.ADMIN_EMAIL || 'asutosh.pda@gmail.com';

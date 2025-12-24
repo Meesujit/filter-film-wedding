@@ -1,14 +1,34 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, X, Video, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
-import { useToast } from '@/app/hooks/use-toast';
+
+import React, { useEffect, useState } from 'react';
+import {
+  Plus,
+  Trash2,
+  X,
+  Video,
+  Loader2,
+  Upload,
+  Image as ImageIcon,
+} from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/app/src/components/ui/button';
 import { Input } from '@/app/src/components/ui/input';
-import { useRouter } from 'next/navigation';
+import { useToast } from '@/app/hooks/use-toast';
 import { Gallery } from '@/app/types/gallery';
-import Image from 'next/image';
+import { Label } from '@/app/src/components/ui/label';
 
-const categories = ['Ceremony', 'Bridal', 'Portraits', 'Mehndi', 'Sangeet', 'Reception', 'Decor', 'Films'];
+const categories = [
+  'Ceremony',
+  'Bridal',
+  'Portraits',
+  'Mehndi',
+  'Sangeet',
+  'Reception',
+  'Decor',
+  'Films',
+];
+
 const eventTypes = ['Wedding', 'Pre-Wedding', 'Engagement'];
 
 interface Props {
@@ -18,23 +38,31 @@ interface Props {
 const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
   const router = useRouter();
   const { toast } = useToast();
+
   const [gallery, setGallery] = useState<Gallery[]>(initialGallery || []);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingField, setUploadingField] = useState<'url' | 'thumbnail' | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+
+  /* ---------------- FILE STATES (NO AUTO UPLOAD) ---------------- */
+  const [mainFile, setMainFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+
+  const [mainPreview, setMainPreview] = useState<string | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
+  /* ---------------- FORM DATA ---------------- */
   const [formData, setFormData] = useState({
     type: 'photo' as 'photo' | 'video',
+    title: '',
     url: '',
     thumbnail: '',
-    title: '',
     category: 'Ceremony',
     eventType: 'Wedding',
   });
 
-  // Fetch gallery items on mount
+  /* ---------------- FETCH GALLERY ---------------- */
   useEffect(() => {
     if (!initialGallery || initialGallery.length === 0) {
       fetchGallery();
@@ -44,409 +72,359 @@ const ManageGallery: React.FC<Props> = ({ initialGallery }) => {
   const fetchGallery = async () => {
     setIsFetching(true);
     try {
-      const response = await fetch('/api/admin/gallery');
-      const data = await response.json();
-
-      if (response.ok && data.galleries) {
-        setGallery(Array.isArray(data.galleries) ? data.galleries : []);
-      } else {
-        console.error('Failed to fetch gallery:', data);
-        toast({
-          title: 'Error',
-          description: 'Failed to load gallery items',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching gallery:', error);
+      const res = await fetch('/api/admin/gallery');
+      const data = await res.json();
+      if (res.ok) setGallery(data.galleries || []);
+    } catch {
       toast({
         title: 'Error',
-        description: 'Failed to load gallery items',
-        variant: 'destructive'
+        description: 'Failed to load gallery',
+        variant: 'destructive',
       });
     } finally {
       setIsFetching(false);
     }
   };
 
+  /* ---------------- CLEANUP PREVIEWS ---------------- */
+  useEffect(() => {
+    return () => {
+      if (mainPreview) URL.revokeObjectURL(mainPreview);
+      if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
+    };
+  }, [mainPreview, thumbnailPreview]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'url' | 'thumbnail') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  /* ---------------- UPLOAD HELPER ---------------- */
+  const uploadImage = async (file: File): Promise<string> => {
+    const form = new FormData();
+    form.append('file', file);
 
-    setIsUploading(true);
-    setUploadingField(field);
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
+    const res = await fetch('/api/admin/upload-image', {
+      method: 'POST',
+      body: form,
+    });
 
-      const response = await fetch('/api/admin/upload-image', {
-        method: 'POST',
-        body: formDataUpload,
-      });
-
-      if (response.ok) {
-        const { url } = await response.json();
-        setFormData(prev => ({ ...prev, [field]: url }));
-        toast({
-          title: 'Image Uploaded',
-          description: `${field === 'url' ? 'Main image' : 'Thumbnail'} uploaded successfully.`
-        });
-      } else {
-        toast({
-          title: 'Upload Failed',
-          description: 'Failed to upload image',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: 'Error',
-        description: 'Error uploading image',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsUploading(false);
-      setUploadingField(null);
-    }
+    if (!res.ok) throw new Error('Upload failed');
+    const { url } = await res.json();
+    return url;
   };
 
+  /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const galleryData = {
-      type: formData.type,
-      url: formData.url,
-      thumbnail: formData.thumbnail || undefined,
-      title: formData.title,
-      category: formData.category,
-      eventType: formData.eventType,
-    };
-
     try {
-      const response = await fetch('/api/admin/gallery', {
+      let finalUrl = formData.url;
+      let finalThumbnail = formData.thumbnail;
+
+      if (mainFile) {
+        setIsUploading(true);
+        finalUrl = await uploadImage(mainFile);
+      }
+
+      if (thumbnailFile) {
+        setIsUploading(true);
+        finalThumbnail = await uploadImage(thumbnailFile);
+      }
+
+      const payload = {
+        type: formData.type,
+        title: formData.title,
+        url: finalUrl,
+        thumbnail: formData.type === 'video' ? finalThumbnail : undefined,
+        category: formData.category,
+        eventType: formData.eventType,
+      };
+
+      const res = await fetch('/api/admin/gallery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(galleryData),
+        body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
 
-      if (response.ok) {
-        setGallery(prev => [...prev, result.gallery]);
-        toast({
-          title: 'Gallery Updated',
-          description: 'New item added to gallery.'
-        });
-        setIsModalOpen(false);
-        resetForm();
-        router.refresh();
-      } else {
-        toast({
-          title: 'Error',
-          description: result.error || 'Failed to add gallery item',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Submit error:', error);
+      setGallery(prev => [...prev, result.gallery]);
+      toast({ title: 'Gallery item added successfully' });
+
+      resetForm();
+      setIsModalOpen(false);
+      router.refresh();
+    } catch {
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive'
+        description: 'Failed to add gallery item',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
+      setIsUploading(false);
     }
   };
 
+  /* ---------------- DELETE ---------------- */
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
-    try {
-      const response = await fetch(`/api/admin/gallery/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setGallery(prev => prev.filter(item => item.id !== id));
-        toast({
-          title: 'Item Deleted',
-          description: 'Gallery item has been removed.'
-        });
-        router.refresh();
-      } else {
-        const result = await response.json();
-        toast({
-          title: 'Error',
-          description: result.error || 'Failed to delete item',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive'
-      });
-    }
+    await fetch(`/api/admin/gallery/${id}`, { method: 'DELETE' });
+    setGallery(prev => prev.filter(item => item.id !== id));
+    router.refresh();
   };
 
+  /* ---------------- RESET ---------------- */
   const resetForm = () => {
     setFormData({
       type: 'photo',
+      title: '',
       url: '',
       thumbnail: '',
-      title: '',
       category: 'Ceremony',
       eventType: 'Wedding',
     });
+    setMainFile(null);
+    setThumbnailFile(null);
+    setMainPreview(null);
+    setThumbnailPreview(null);
   };
 
   return (
-    <div className="space-y-0 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">Manage Gallery</h1>
-          <p className="text-muted-foreground">Upload and manage your portfolio.</p>
+          <h1 className="text-3xl font-bold">Manage Gallery</h1>
+          <p className="text-muted-foreground">Upload and manage your portfolio</p>
         </div>
         <Button variant="royal" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4" />
-          Add Item
+          <Plus className="w-4 h-4 mr-1" /> Add Item
         </Button>
       </div>
 
       {/* Gallery Grid */}
       {isFetching ? (
-        <div className="bg-card rounded-xl shadow-card p-8 text-center h-72 flex flex-col items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-          <p className="text-muted-foreground">Loading gallery...</p>
-        </div>
-      ) : gallery.length === 0 ? (
-        <div className="bg-card rounded-xl shadow-card p-8 text-center">
-          <p className="text-muted-foreground mb-4">No gallery items found. Add your first item to get started.</p>
-          <Button variant="royal" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add First Item
-          </Button>
+        <div className="h-64 flex items-center justify-center">
+          <Loader2 className="animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {gallery.map((item) => (
-            <div key={item.id} className="group relative rounded-lg overflow-hidden bg-card shadow-card">
-              {(item.type === 'video' ? item.thumbnail : item.url) && (
-                <Image
-                  src={item.type === 'video' ? item.thumbnail! : item.url!}
-                  alt={item.title}
-                  width={400}
-                  height={300}
-                  className="w-full h-48 object-cover"
-                />
-              )}
+          {gallery.map(item => (
+            <div
+              key={item.id}
+              className="group relative rounded-lg overflow-hidden bg-card shadow"
+            >
+              <Image
+                src={item.type === 'video' ? item.thumbnail! : item.url!}
+                alt={item.title}
+                width={400}
+                height={300}
+                className="w-full h-48 object-cover"
+              />
+
               {item.type === 'video' && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <Video className="w-10 h-10 text-white/80" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Video className="text-popover w-10 h-10" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition"
+              >
+                <Trash2 className="text-popover" />
+              </button>
+
               <div className="p-3">
-                <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                <p className="text-xs text-muted-foreground">{item.category} • {item.eventType}</p>
+                <p className="font-medium truncate">{item.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {item.category} • {item.eventType}
+                </p>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add Modal */}
+      {/* MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/50">
-          <div className="bg-card rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-elegant animate-scale-in">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <h2 className="font-heading text-xl font-semibold">Add Gallery Item</h2>
-              <button onClick={() => setIsModalOpen(false)}>
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
+        <div className="fixed inset-0 z-50 bg-maroon/40 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-card w-full max-w-md rounded-xl p-6 space-y-4"
+          >
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Add Gallery Item</h2>
+              <X onClick={() => setIsModalOpen(false)} className="cursor-pointer" />
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Type</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={formData.type === 'photo'}
-                      onChange={() => setFormData({ ...formData, type: 'photo' })}
-                      className="w-4 h-4"
-                    />
-                    <ImageIcon className="w-4 h-4" />
-                    Photo
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={formData.type === 'video'}
-                      onChange={() => setFormData({ ...formData, type: 'video' })}
-                      className="w-4 h-4"
-                    />
-                    <Video className="w-4 h-4" />
-                    Video
-                  </label>
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Title</label>
+            {/* Type */}
+            <div className="flex gap-8">
+              <Label className="flex items-center gap-3 cursor-pointer">
                 <Input
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Royal Mandap Ceremony"
+                  type="radio"
+                  name="mediaType"
+                  checked={formData.type === 'photo'}
+                  onChange={() => setFormData({ ...formData, type: 'photo' })}
+                  className="w-5 h-5 accent-primary"
                 />
-              </div>
 
-              {/* Main Image/Video URL Upload */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  {formData.type === 'photo' ? 'Photo' : 'Video URL'}
-                </label>
-                <div className="space-y-2">
-                  {formData.url && (
-                    <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                      <img
-                        src={formData.url}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Input
-                      required
-                      value={formData.url}
-                      onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                      placeholder="https://... or upload"
-                      className="flex-1"
+                <ImageIcon className="w-6 h-6 text-foreground" />
+
+                <span className="text-base font-medium">Photo</span>
+              </Label>
+
+              <Label className="flex items-center gap-3 cursor-pointer">
+                <Input
+                  type="radio"
+                  name="mediaType"
+                  checked={formData.type === 'video'}
+                  onChange={() => setFormData({ ...formData, type: 'video' })}
+                  className="w-5 h-5 accent-primary"
+                />
+
+                <Video className="w-6 h-6 text-foreground" />
+
+                <span className="text-base font-medium">Video</span>
+              </Label>
+            </div>
+
+
+            <Label>
+              <span className='text-base text-muted-foreground'>Title</span>
+              <Input
+                placeholder="Title"
+                required
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+
+              />
+            </Label>
+
+            {/* MAIN IMAGE */}
+            {mainPreview && (
+              <div className="relative h-32 rounded overflow-hidden">
+                <Image src={mainPreview} alt="Preview" fill className="object-cover" />
+              </div>
+            )}
+
+            <div className="relative">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setMainFile(file);
+                  if (file) setMainPreview(URL.createObjectURL(file));
+                }}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+              />
+
+              <div className="h-11 px-3 flex justify-center items-center border border-input rounded-md bg-background text-sm text-muted-foreground">
+                <Upload className="w-4 h-4 mr-2" />
+                {mainFile
+                  ? mainFile.name
+                  : formData.type === 'photo'
+                    ? 'Select Image'
+                    : 'Select Video Thumbnail'}
+              </div>
+            </div>
+
+
+            {/* VIDEO THUMBNAIL */}
+            {formData.type === 'video' && (
+              <div className="space-y-3">
+                {/* Thumbnail Preview */}
+                {thumbnailPreview && (
+                  <div className="relative h-32 rounded-lg overflow-hidden border">
+                    <Image
+                      src={thumbnailPreview}
+                      alt="Thumbnail Preview"
+                      fill
+                      className="object-cover"
                     />
-                    {formData.type === 'photo' && (
-                      <label className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors whitespace-nowrap">
-                        <Upload className="w-4 h-4" />
-                        {isUploading && uploadingField === 'url' ? 'Uploading...' : 'Upload'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(e, 'url')}
-                          disabled={isUploading}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
+                  </div>
+                )}
+
+                {/* File Input with Text Inside */}
+                <div className="relative">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setThumbnailFile(file);
+                      if (file) {
+                        setThumbnailPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                    className="absolute inset-0 z-10 opacity-0 cursor-pointer"
+                  />
+
+                  <div
+                    className="h-11 px-3 flex items-center border border-input rounded-md bg-background text-sm text-muted-foreground gap-2"
+                  >
+                    <Upload className="w-4 h-4 shrink-0" />
+                    <span className="truncate">
+                      {thumbnailFile
+                        ? thumbnailFile.name
+                        : 'Select Video Thumbnail'}
+                    </span>
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Video Thumbnail Upload */}
-              {formData.type === 'video' && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Thumbnail</label>
-                  <div className="space-y-2">
-                    {formData.thumbnail && (
-                      <div className="relative w-full h-32 rounded-lg overflow-hidden">
-                        <img
-                          src={formData.thumbnail}
-                          alt="Thumbnail Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Input
-                        value={formData.thumbnail}
-                        onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                        placeholder="https://... or upload"
-                        className="flex-1"
-                      />
-                      <label className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors whitespace-nowrap">
-                        <Upload className="w-4 h-4" />
-                        {isUploading && uploadingField === 'thumbnail' ? 'Uploading...' : 'Upload'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(e, 'thumbnail')}
-                          disabled={isUploading}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* CATEGORY + EVENT */}
+            <div className="grid grid-cols-2 gap-4">
+              <select
+                value={formData.category}
+                onChange={e =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                className="h-10 border rounded px-3"
+              >
+                {categories.map(c => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Event Type</label>
-                  <select
-                    value={formData.eventType}
-                    onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                  >
-                    {eventTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <select
+                value={formData.eventType}
+                onChange={e =>
+                  setFormData({ ...formData, eventType: e.target.value })
+                }
+                className="h-10 border rounded px-3"
+              >
+                {eventTypes.map(e => (
+                  <option key={e}>{e}</option>
+                ))}
+              </select>
+            </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1"
-                  disabled={loading || isUploading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="royal"
-                  className="flex-1"
-                  disabled={loading || isUploading}
-                >
-                  {loading && (
-                    <span
-                      className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                      aria-hidden
-                    />
-                  )}
-                  Add Item
-                </Button>
-              </div>
-            </form>
-          </div>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+                className="mr-2"
+              >
+                Cancel
+              </Button>
+
+              <Button
+                type="submit"
+                variant="royal"
+                disabled={loading || isUploading}
+              >
+                {(loading || isUploading) && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Add Item
+              </Button>
+
+            </div>
+          </form>
         </div>
       )}
     </div>

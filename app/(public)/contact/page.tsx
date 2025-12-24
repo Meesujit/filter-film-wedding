@@ -9,7 +9,7 @@ import { Textarea } from '@/app/src/components/ui/textarea';
 import { Button } from '@/app/src/components/ui/button';
 
 
-export default function Page(){
+export default function ContactPage() {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -18,27 +18,63 @@ export default function Page(){
     eventDate: '',
     message: '',
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    toast({
-      title: "Message Sent!",
-      description: "Thank you for reaching out. We'll get back to you within 24 hours.",
-    });
-    setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await res.json();
+      console.log('Message sent:', data);
+
+      toast({
+        title: 'Message Sent!',
+        description: "Thank you for reaching out. We'll get back to you within 24 hours.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        eventDate: '',
+        message: '',
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Something went wrong',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <div>
       {/* Hero */}
-      <section className="relative py-20 bg-maroon overflow-hidden">
+      <section className="relative py-12 overflow-hidden" id='contact'>
         <div className="absolute inset-0 mandala-pattern opacity-20" />
         <div className="container mx-auto px-4 relative z-10">
           <SectionHeader
             title="Contact Us"
             subtitle="Let's discuss how we can capture your special moments."
-            light
+            centered
           />
         </div>
       </section>
@@ -47,88 +83,74 @@ export default function Page(){
       <section className="py-20 bg-gradient-elegant">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12">
-            {/* Contact Info */}
-            <div className="animate-fade-in">
-              <h2 className="font-heading text-3xl font-bold text-foreground mb-6">
-                Get In Touch
-              </h2>
-              <p className="text-muted-foreground mb-8 leading-relaxed">
-                We'd love to hear from you! Whether you have questions about our packages, 
-                want to discuss your wedding plans, or simply want to say hello, feel free 
-                to reach out.
-              </p>
-
-              <div className="space-y-6 mb-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-gold" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Studio Address</h3>
-                    <p className="text-muted-foreground">
-                      42, Royal Plaza, MG Road<br />
-                      New Delhi - 110001, India
-                    </p>
-                  </div>
+            <div className="space-y-6 mb-8">
+              {/* Address */}
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-gold" />
                 </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
-                    <Phone className="w-5 h-5 text-gold" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Phone</h3>
-                    <p className="text-muted-foreground">+91 98765 43210</p>
-                    <p className="text-muted-foreground">+91 11 4567 8900</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-5 h-5 text-gold" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Email</h3>
-                    <p className="text-muted-foreground">info@royalweddings.com</p>
-                    <p className="text-muted-foreground">bookings@royalweddings.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5 text-gold" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">Working Hours</h3>
-                    <p className="text-muted-foreground">Mon - Sat: 10:00 AM - 7:00 PM</p>
-                    <p className="text-muted-foreground">Sunday: By Appointment</p>
-                  </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Studio Address
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Gandhinagar 2nd Lane Extension<br />
+                    Near Mahamayee College<br />
+                    Berhampur, Odisha – 760001
+                  </p>
                 </div>
               </div>
 
-              {/* Social Links */}
-              <div>
-                <h3 className="font-semibold text-foreground mb-4">Follow Us</h3>
-                <div className="flex gap-4">
-                  <a href="#" className="w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:bg-primary/80 transition-colors">
-                    <Instagram className="w-5 h-5 text-primary-foreground" />
-                  </a>
-                  <a href="#" className="w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:bg-primary/80 transition-colors">
-                    <Facebook className="w-5 h-5 text-primary-foreground" />
-                  </a>
-                  <a href="#" className="w-10 h-10 rounded-full bg-primary flex items-center justify-center hover:bg-primary/80 transition-colors">
-                    <Youtube className="w-5 h-5 text-primary-foreground" />
-                  </a>
+              {/* Phone */}
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">Phone</h3>
+                  <p className="text-muted-foreground">+91 9XXXXXXXXX</p>
+                  <p className="text-muted-foreground">(Call / WhatsApp)</p>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">Email</h3>
+                  <p className="text-muted-foreground">info@filterfilm.in</p>
+                  <p className="text-muted-foreground">bookings@filterfilm.in</p>
+                </div>
+              </div>
+
+              {/* Working Hours */}
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-1">
+                    Working Hours
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Monday – Saturday: 10:00 AM – 7:00 PM
+                  </p>
+                  <p className="text-muted-foreground">
+                    Sunday: By Appointment Only
+                  </p>
                 </div>
               </div>
             </div>
+
 
             {/* Contact Form */}
             <div className="bg-card rounded-2xl p-8 shadow-card animate-fade-in delay-200">
               <h2 className="font-heading text-2xl font-bold text-foreground mb-6">
                 Send Us a Message
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
@@ -199,7 +221,7 @@ export default function Page(){
                 </div>
 
                 <Button type="submit" variant="royal" size="lg" className="w-full group">
-                  Send Message
+                  {loading ? 'Sending...' : 'Send Message'}
                   <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </form>
@@ -209,11 +231,14 @@ export default function Page(){
       </section>
 
       {/* Map Placeholder */}
-      <section className="h-80 bg-ivory-dark flex items-center justify-center">
-        <div className="text-center">
-          <MapPin className="w-12 h-12 text-gold mx-auto mb-4" />
-          <p className="text-muted-foreground">Map integration would go here</p>
-        </div>
+      <section className="h-96 bg-ivory-dark">
+        <iframe
+          title="Filter Film Studio Location"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000.532244267929!2d84.78148337281011!3d19.309579535386483!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a3d5170e456fcfd%3A0x8c02bc510a43c3f4!2sFilter%20Films!5e1!3m2!1sen!2sin!4v1766562605939!5m2!1sen!2sin"
+          className="w-full h-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
       </section>
     </div>
   );

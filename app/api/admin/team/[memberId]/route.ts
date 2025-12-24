@@ -1,5 +1,7 @@
-import { auth } from "@/app/auth";
-import { userService } from "@/app/lib/services/user-service";
+
+import { getServerSession } from "@/app/lib/firebase/server-auth";
+import { userService } from "@/app/lib/services/user-service.server";
+import { get } from "http";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET single team member
@@ -7,9 +9,9 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ memberId: string }> }
 ) {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -40,9 +42,9 @@ export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ memberId: string }> }
 ) {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -120,9 +122,9 @@ export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ memberId: string }> }
 ) {
-  const session = await auth();
+  const session = await getServerSession();
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

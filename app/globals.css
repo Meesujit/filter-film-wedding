@@ -123,6 +123,11 @@
     @apply border-border;
   }
 
+  html {
+    @apply bg-background text-foreground;
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
   }
