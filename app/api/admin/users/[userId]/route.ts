@@ -1,7 +1,6 @@
 
 import { userService } from "@/app/lib/services/user-service.server";
 import { NextResponse } from "next/server";
-import { UserRole } from "@/app/types/user";
 import { getServerSession } from "@/app/lib/firebase/server-auth";
 
 export async function GET(
@@ -44,6 +43,8 @@ export async function GET(
   }
 }
 
+// In your /api/admin/users/[userId]/route.ts PATCH method
+
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ userId: string }> }
@@ -51,12 +52,10 @@ export async function PATCH(
   const { userId } = await context.params;
   const session = await getServerSession();
 
-  // Authentication
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Authorization
   if (session.role !== "admin") {
     return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
   }
@@ -67,12 +66,10 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Prevent editing another admin's role if necessary
     if (targetUser.role === "admin" && targetUser.id !== session.id) {
       return NextResponse.json({ error: "Cannot modify another admin" }, { status: 400 });
     }
 
-    // Read fields from request
     const {
       name,
       email,
@@ -82,9 +79,10 @@ export async function PATCH(
       experience,
       bio,
       instagram,
+      phoneNumber,
+      address,
     } = await req.json();
 
-    // Build updated data object
     const updatedData: any = {
       name,
       email,
@@ -92,13 +90,21 @@ export async function PATCH(
       image: photo,
     };
 
-    // Only update teamProfile if role is 'team'
+    // Update teamProfile if role is 'team'
     if (role === "team") {
       updatedData.teamProfile = {
         specialization,
         experience,
         bio,
         instagram,
+      };
+    }
+
+    // Update customerProfile if role is 'customer'
+    if (role === "customer") {
+      updatedData.customerProfile = {
+        phoneNumber,
+        address,
       };
     }
 
@@ -110,7 +116,6 @@ export async function PATCH(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-
 
 export async function DELETE(
   req: Request,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, Loader } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -136,7 +136,10 @@ export default function Navbar() {
             <div className="border-t border-border my-2"></div>
             
             {loading ? (
-              <div className="h-9 w-full bg-muted animate-pulse rounded-md" />
+              <div className="flex items-center justify-center py-4">
+                <Loader className="animate-spin mx-auto w-6 h-6 text-muted-foreground" />
+                <span className="sr-only">Loading...</span>
+              </div>
             ) : isAuthenticated ? (
               <div className="space-y-2">
                 <Link href={getDashboardLink()} onClick={() => setIsOpen(false)}>

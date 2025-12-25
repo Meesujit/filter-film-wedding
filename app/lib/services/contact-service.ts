@@ -1,59 +1,68 @@
+// lib/services/contact-service.ts
 import { driveService } from "../google-drive.server";
 import { ContactMessage } from "@/app/types/contact-message";
 import { v4 as uuidv4 } from "uuid";
 
+const COLLECTION = "contact";
+
 export const contactService = {
-    async getAllMessages(): Promise<ContactMessage[]> {
-        try{
-            const messages = await driveService.getCollection<ContactMessage>("contact");
-            return messages;
-        } catch (error) {
-            console.error("Error fetching contact messages:", error);
-            return [];
-        }
-    },
+  async getAll(): Promise<ContactMessage[]> {
+    const messages = await driveService.getCollection<ContactMessage>(COLLECTION);
+    return messages.map(m => ({
+      ...m,
+      id: String(m.id),
+      status: m.status ?? "pending",
+    }));
+  },
 
-    async createMessage(messageData: Omit<ContactMessage, "id" | "createdAt">): Promise<ContactMessage> {
-        const messages = await this.getAllMessages();
-        const newMessage: ContactMessage = {
-            id: uuidv4(),
-            ...messageData,
-            createdAt: new Date().toISOString(),
-        };
-        messages.push(newMessage);
-        await driveService.saveCollection("contact", messages);
-        return newMessage;
-    },
+  async getById(id: string): Promise<ContactMessage | null> {
+    const messages = await this.getAll();
+    return messages.find(m => m.id === id) ?? null;
+  },
 
-    async deleteAllMessages(): Promise<boolean> {
-        try {
-            await driveService.saveCollection("contact", []);
-            return true;
-        } catch (error) {
-            console.error("Error deleting all contact messages:", error);
-            return false;
-        }
-    },
+  async create(data: Omit<ContactMessage, "id" | "createdAt" | "status">) {
+    const messages = await this.getAll();
 
-    async deleteMessage(id: string): Promise<boolean> {
-        const messages = await this.getAllMessages();
-        const msgIndex = messages.findIndex(m => m.id === id);
-        if (msgIndex === -1) return false;
-        messages.splice(msgIndex, 1);
-        await driveService.saveCollection("contact", messages);
-        return true;
-    },
+    const newMessage: ContactMessage = {
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      status: "pending",
+      ...data,
+    };
 
-    async updateMessage(id: string, updates: Partial<ContactMessage>): Promise<ContactMessage | null> {
-        const messages = await this.getAllMessages();
-        const msgIndex = messages.findIndex(m => m.id === id);
-        if (msgIndex === -1) return null;
-        messages[msgIndex] = {
-            ...messages[msgIndex],
-            ...updates,
-        };
-        await driveService.saveCollection("contact", messages);
-        return messages[msgIndex];
-    },
+    messages.push(newMessage);
+    await driveService.saveCollection(COLLECTION, messages);
+    return newMessage;
+  },
 
-}
+  async update(id: string, updates: Partial<ContactMessage>) {
+    const messages = await this.getAll();
+    const index = messages.findIndex(m => m.id === id);
+
+    if (index === -1) return null;
+
+    messages[index] = {
+      ...messages[index],
+      ...updates,
+      status: updates.status ?? messages[index].status,
+    };
+
+    await driveService.saveCollection(COLLECTION, messages);
+    return messages[index];
+  },
+
+  async delete(id: string) {
+    const messages = await this.getAll();
+    const filtered = messages.filter(m => m.id !== id);
+
+    if (filtered.length === messages.length) return false;
+
+    await driveService.saveCollection(COLLECTION, filtered);
+    return true;
+  },
+
+  async deleteAll() {
+    await driveService.saveCollection(COLLECTION, []);
+    return true;
+  },
+};

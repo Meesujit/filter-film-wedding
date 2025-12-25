@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     try {
-        const messages = await contactService.getAllMessages();
+        const messages = await contactService.getAll();
         return NextResponse.json({ messages });
     } catch (error) {
         console.error("Error fetching contact messages:", error);
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     try {
         const data = await req.json();
         // Create new contact message
-        const newMessage = await contactService.createMessage({
+        const newMessage = await contactService.create({
             name: data.name,
             email: data.email,
             phone: data.phone,
