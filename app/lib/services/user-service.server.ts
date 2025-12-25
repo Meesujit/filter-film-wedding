@@ -1,4 +1,3 @@
-import 'server-only';
 import { driveService } from '../google-drive.server';
 import { User, UserRole } from '@/app/types/user';
 import { v4 as uuidv4 } from 'uuid';

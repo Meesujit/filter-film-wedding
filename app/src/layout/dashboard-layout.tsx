@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Menu, X, Home, Package, Calendar, Image, Users, LogOut, User, 
-  ChevronRight, Loader2, Globe, ClipboardCheck 
+  ChevronRight, Loader2, Globe, ClipboardCheck, 
+  User2Icon,
+  UserSearch,
+  MailOpenIcon
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +20,9 @@ const navigationConfig = {
     { href: '/admin/bookings', label: 'Manage Bookings', icon: Calendar },
     { href: '/admin/gallery', label: 'Manage Gallery', icon: Image },
     { href: '/admin/team', label: 'Manage Team', icon: Users },
+    { href: '/admin/customers', label: 'Customers', icon: UserSearch },
     { href: '/admin/attendance', label: 'Attendance', icon: ClipboardCheck },
+    { href: '/admin/messages', label: 'Messages', icon: MailOpenIcon },
     { href: '/admin/profile', label: 'Profile', icon: User },
   ],
   customer: [

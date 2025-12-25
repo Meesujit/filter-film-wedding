@@ -1,7 +1,7 @@
 import { userService } from '@/app/lib/services/user-service.server';
 
 async function createAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'asutosh.pda@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'subhamabo@gmail.com';
   
   const existingUser = await userService.getUserByEmail(adminEmail);
   
