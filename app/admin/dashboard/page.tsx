@@ -177,7 +177,7 @@ export default function AdminDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-900">{booking.eventName}</p>
-                    <p className="text-sm text-gray-600">{booking.date} • {booking.venue}</p>
+                    <p className="text-sm text-gray-600">{booking.startDate} - {booking.endDate} • {booking.venue}</p>
                   </div>
                   <div className="text-right">
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${

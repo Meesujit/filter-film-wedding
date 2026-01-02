@@ -68,7 +68,7 @@ export default function TeamDashboard() {
   const today = new Date();
   const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
   const upcomingEvents = bookings.filter(b => {
-    const eventDate = new Date(b.date);
+    const eventDate = new Date(b.startDate);
     return eventDate >= today && eventDate <= nextWeek;
   }).length;
 
@@ -213,7 +213,7 @@ export default function TeamDashboard() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="w-4 h-4" />
-                        <span>{new Date(assignment.date).toLocaleDateString('en-IN', { 
+                        <span>{new Date(assignment.startDate).toLocaleDateString('en-IN', { 
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric'

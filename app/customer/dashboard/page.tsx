@@ -98,14 +98,14 @@ export default function CustomerDashboard() {
   const today = new Date();
   const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
   const upcomingEvents = bookings.filter(b => {
-    const eventDate = new Date(b.date);
+    const eventDate = new Date(b.startDate);
     return eventDate >= today && eventDate <= next30Days && b.status !== 'rejected';
   });
 
   // Next event
   const nextEvent = bookings
-    .filter(b => new Date(b.date) >= today && b.status !== 'rejected' && b.status !== 'completed')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    .filter(b => new Date(b.startDate) >= today && b.status !== 'rejected' && b.status !== 'completed')
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
 
   // Recent bookings (last 5)
   const recentBookings = [...bookings]
@@ -234,11 +234,11 @@ export default function CustomerDashboard() {
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{formatDate(nextEvent.date)}</span>
+                  <span>{formatDate(nextEvent.startDate)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  <span className="font-semibold">{getDaysUntil(nextEvent.date)}</span>
+                  <span className="font-semibold">{getDaysUntil(nextEvent.startDate)}</span>
                 </div>
                 <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">
                   {nextEvent.eventType}
@@ -285,7 +285,7 @@ export default function CustomerDashboard() {
             </div>
           ) : (
             recentBookings.map((booking) => {
-              const pkg = packages.find(p => p.id === booking.packageId);
+              const pkg = packages.find(p => p.id === booking.packages[0]?.packageId);
               const StatusIcon = statusConfig[booking.status].icon;
 
               return (
@@ -305,7 +305,7 @@ export default function CustomerDashboard() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-muted-foreground mt-2">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
-                          <span>{formatDate(booking.date)}</span>
+                          <span>{formatDate(booking.startDate)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4" />
