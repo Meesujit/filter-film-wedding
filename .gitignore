@@ -44,3 +44,5 @@ next-env.d.ts
 service-account.json
 
 note.txt
+
+drive-tokens.json
