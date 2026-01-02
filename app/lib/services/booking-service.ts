@@ -75,8 +75,9 @@ export const bookingService = {
         const start = new Date(startDate);
         const end = new Date(endDate);
         return bookings.filter(b => {
-            const bookingDate = new Date(b.date);
-            return bookingDate >= start && bookingDate <= end;
+            const bookingStartDate = new Date(b.startDate);
+            const bookingEndDate = new Date(b.endDate);
+            return bookingStartDate <= end && bookingEndDate >= start;
         });
     },
     async getTotalRevenue(): Promise<number> {
@@ -85,17 +86,17 @@ export const bookingService = {
     },
     async getBookingsByPackageId(packageId: string): Promise<Booking[]> {
         const bookings = await this.getAllBookings();
-        return bookings.filter(b => b.packageId === packageId);
+        return bookings.filter(b => b.packages.some(p => p.packageId === packageId));
     },
     async getUpcomingBookings(): Promise<Booking[]> {
         const bookings = await this.getAllBookings();
         const now = new Date();
-        return bookings.filter(b => new Date(b.date) > now);
+        return bookings.filter(b => new Date(b.startDate) > now);
     },
     async getPastBookings(): Promise<Booking[]> {
         const bookings = await this.getAllBookings();
         const now = new Date();
-        return bookings.filter(b => new Date(b.date) <= now);
+        return bookings.filter(b => new Date(b.endDate) <= now);
     },
     async getBookingsByAssignedTeam(teamMemberId: string): Promise<Booking[]> {
         const bookings = await this.getAllBookings();
@@ -157,10 +158,12 @@ export const bookingService = {
     async getBookingsGroupedByPackage(): Promise<Record<string, Booking[]>> {
         const bookings = await this.getAllBookings();
         return bookings.reduce((acc, booking) => {
-            if (!acc[booking.packageId]) {
-                acc[booking.packageId] = [];
+            for (const pkg of booking.packages) {
+                if (!acc[pkg.packageId]) {
+                    acc[pkg.packageId] = [];
+                }
+                acc[pkg.packageId].push(booking);
             }
-            acc[booking.packageId].push(booking);
             return acc;
         }, {} as Record<string, Booking[]>);
     },
@@ -171,15 +174,15 @@ export const bookingService = {
     async getBookingsByMonth(year: number, month: number): Promise<Booking[]> {
         const bookings = await this.getAllBookings();
         return bookings.filter(b => {
-            const bookingDate = new Date(b.date);
-            return bookingDate.getFullYear() === year && (bookingDate.getMonth() + 1) === month;
+            const bookingStartDate = new Date(b.startDate);
+            return bookingStartDate.getFullYear() === year && (bookingStartDate.getMonth() + 1) === month;
         });
     },
     async getBookingsByYear(year: number): Promise<Booking[]> {
         const bookings = await this.getAllBookings();
         return bookings.filter(b => {
-            const bookingDate = new Date(b.date);
-            return bookingDate.getFullYear() === year;
+            const bookingStartDate = new Date(b.startDate);
+            return bookingStartDate.getFullYear() === year;
         });
     },
     async getBookingsWithFullPayment(): Promise<Booking[]> {

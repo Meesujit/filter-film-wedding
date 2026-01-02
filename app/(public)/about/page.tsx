@@ -1,51 +1,87 @@
 import SectionHeader from "@/app/src/components/common/SectionHeader";
 import { Button } from "@/app/src/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, PhoneCallIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function AboutSection() {
   return (
-    <section className="py-20 lg:py-20" id="about">
-      <div className="container mx-auto px-4 flex flex-col gap-10">
-        <SectionHeader 
-          title="About Filter Film Studio" 
-          subtitle="Discover the story behind Filter Film Studio, where passion meets professionalism in capturing your most cherished moments."
+    <section
+      id="about"
+      className="relative overflow-hidden py-24 lg:py-32"
+    >
+      {/* Background Accent */}
+      {/* <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/4 left-0 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
+      </div> */}
+
+      <div className="container mx-auto px-6 lg:px-8">
+        <SectionHeader
+          title="ABOUT US"
+          subtitle="A cinematic storytelling studio capturing emotions, rituals, and moments that last forever."
           centered
         />
 
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
-            <div className="relative animate-fade-in">
-              <div className="absolute -top-4 -left-4 w-full h-full rounded-lg" />
+        <div className="mt-16 grid lg:grid-cols-12 gap-12 items-center">
+          {/* Image Column */}
+          <div className="lg:col-span-6 relative">
+            <div className="relative overflow-hidden">
               <Image
                 src="/about-image/about-image.jpg"
-                alt="Wedding couple"
-                width={600}
-                height={500}
-                className="relative rounded-lg shadow-elegant w-full h-[500px] object-cover"
+                alt="Filter Film Studio Wedding Moment"
+                width={800}
+                height={600}
+                className="w-full h-[520px] object-cover scale-105 hover:scale-100 transition-transform duration-700"
+                priority
               />
             </div>
-            
-            <div className="animate-fade-in delay-200">
-              <p className="text-muted-foreground leading-relaxed font-bold text-xl">
-                At <span className="text-2xl font-bold text-gold">Filter Film Studio</span>, we understand that every Indian wedding is a tapestry of 
-                emotions, traditions, and celebrations. Our team of passionate artists brings together 
-                years of experience in capturing the essence of your special day with elegance and authenticity.
+
+            {/* Floating Badge */}
+            <div className="absolute -bottom-6 -right-6 bg-background/90 backdrop-blur-xl border border-border rounded-sm px-6 py-4 shadow-xl">
+              <p className="text-sm uppercase tracking-widest text-muted-foreground">
+                Since
               </p>
-              <p className="text-muted-foreground mt-4 leading-relaxed font-bold text-xl">
-                From the sacred rituals to the joyous celebrations, we ensure every precious moment 
-                is preserved for generations to come.
-              </p>
-              <Link href="/signin" className="inline-block mt-8">
-                <Button variant="outline" className="group font-bold text-xl" size="lg">
-                  Discover More
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <p className="text-2xl font-bold text-primary">2018</p>
+            </div>
+          </div>
+
+          {/* Content Column */}
+          <div className="lg:col-span-6 space-y-6">
+            <h3 className="text-3xl lg:text-4xl font-extrabold leading-tight">
+              Crafting timeless wedding films & photographs
+            </h3>
+
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              At{" "}
+              <span className="font-semibold text-foreground">
+                Filter Film Studio
+              </span>
+              , we believe every Indian wedding is more than an event — it’s a
+              cinematic journey filled with traditions, emotions, and stories
+              waiting to be told.
+            </p>
+
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              From intimate rituals to grand celebrations, our team blends
+              creativity with technical excellence to preserve your moments
+              exactly the way they felt.
+            </p>
+
+            <div className="pt-6">
+              <Link href="/signin">
+                <Button
+                  size="lg"
+                  className="group gap-3 rounded-full px-8 text-base font-semibold tracking-wide"
+                >
+                  <PhoneCallIcon className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                  Book Call
                 </Button>
               </Link>
             </div>
           </div>
         </div>
-      
+      </div>
     </section>
-  )
+  );
 }

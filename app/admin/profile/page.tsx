@@ -6,6 +6,7 @@ import { useAuth } from '@/app/lib/firebase/auth-context';
 
 const AdminProfile = () => {
   const { user } = useAuth();
+  console.log('Admin user data:', user);
 
   return (
     <div className="space-y-8 animate-fade-in">

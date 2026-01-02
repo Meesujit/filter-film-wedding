@@ -1,18 +1,23 @@
 'use client';
 
-
-import { Package } from "@/app/types/package";
-import { Loader2, Check, X, ChevronRight } from "lucide-react";
+import { Loader2, Check, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/app/src/components/ui/button";
 import toast from "react-hot-toast";
-import { set } from "react-hook-form";
+import { CATEGORY, Category, Package, Packages } from "@/app/types/package";
+
+
+interface PackageWithCategory extends Package {
+  categoryLabel: string;
+  categoryValue: Category;
+}
+
 
 export default function CustomerPackagesPage() {
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [packageGroups, setPackageGroups] = useState<Packages[]>([]);
   const [fetchingPackages, setFetchingPackages] = useState(true);
-  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<PackageWithCategory | null>(null);
 
   useEffect(() => {
     fetchPackages();
@@ -25,7 +30,9 @@ export default function CustomerPackagesPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setPackages(Array.isArray(data.packages) ? data.packages : []);
+        setPackageGroups(Array.isArray(data.packages) ? data.packages : []);
+      } else {
+        toast.error('Failed to load packages');
       }
     } catch (error) {
       toast.error('Failed to load packages. Please try again later.');
@@ -41,11 +48,21 @@ export default function CustomerPackagesPage() {
       maximumFractionDigits: 0,
     }).format(price);
 
+  // Flatten all packages from all groups and add category info
+  const allPackages: PackageWithCategory[] = packageGroups.flatMap(group => {
+    const categoryLabel = CATEGORY.find(cat => cat.value === group.category)?.label || group.category;
+    return group.packages.map(pkg => ({
+      ...pkg,
+      categoryLabel,
+      categoryValue: group.category,
+    }));
+  });
+
   return (
     <section className="space-y-8 animate-fade-in">
       <div className="space-y-3">
         <h1 className="font-heading text-3xl font-bold text-foreground">
-          Wedding Packages
+          Our Packages
         </h1>
         <p className="text-muted-foreground">
           Click on any package to view full details
@@ -56,7 +73,7 @@ export default function CustomerPackagesPage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ): packages.length === 0 ? (
+      ) : allPackages.length === 0 ? (
         <p className="text-center text-muted-foreground py-12">
           No packages available at the moment.
         </p>
@@ -65,7 +82,7 @@ export default function CustomerPackagesPage() {
           {/* Package Grid - Small Cards */}
           {!selectedPackage && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {packages.map((pkg) => (
+              {allPackages.map((pkg) => (
                 <button
                   key={pkg.id}
                   onClick={() => setSelectedPackage(pkg)}
@@ -88,6 +105,9 @@ export default function CustomerPackagesPage() {
 
                   {/* Content */}
                   <div className="p-3 space-y-1.5">
+                    <div className="text-[10px] uppercase tracking-wide text-primary font-medium text-left">
+                      {pkg.categoryLabel}
+                    </div>
                     <h3 className="font-semibold text-sm text-foreground line-clamp-1 text-left">
                       {pkg.name}
                     </h3>
@@ -142,6 +162,9 @@ export default function CustomerPackagesPage() {
                   {/* Content Section */}
                   <div className="p-8 space-y-6">
                     <div>
+                      <div className="text-sm uppercase tracking-wide text-primary font-medium mb-2">
+                        {selectedPackage.categoryLabel}
+                      </div>
                       <h2 className="font-heading text-3xl font-bold text-foreground mb-2">
                         {selectedPackage.name}
                       </h2>

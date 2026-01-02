@@ -32,6 +32,5 @@ export async function POST(req: Request) {
             { error: "Internal server error" },
             { status: 500 }
         );
-    }
-    
+    }    
 }

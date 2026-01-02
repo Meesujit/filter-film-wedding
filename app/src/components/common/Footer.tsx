@@ -1,50 +1,57 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Instagram, Facebook, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-maroon text-primary-foreground">
-      {/* Decorative Border */}
-      <div className="h-2 bg-gradient-to-r from-gold via-gold-light to-gold" />
-      
+    <footer className="bg-ivory text-emerald-dark">
+      {/* Top Accent Line */}
+      <div className="h-[2px] bg-gradient-to-r from-emerald via-gold to-emerald" />
+
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center border-2 border-gold">
-                <span className="font-heading text-2xl font-bold text-gold">R</span>
-              </div>
-              <div>
-                <h3 className="font-heading text-xl font-bold">Royal Weddings</h3>
-                <p className="text-xs text-gold tracking-widest">STUDIO</p>
-              </div>
+            {/* Logo Image */}
+            <div className="mb-4">
+              <Image
+                src="/logo/logo3.png" // replace with your logo path
+                alt="Filter Film Studio"
+                width={160}
+                height={50}
+                className="object-contain"
+              />
             </div>
-            <p className="text-primary-foreground/80 text-sm leading-relaxed mb-6">
-              Capturing the essence of Indian weddings with elegance, tradition, and timeless artistry since 2010.
+            <p className="text-sm text-emerald-dark/70 leading-relaxed mb-6">
+              Capturing timeless wedding stories with cinematic elegance, emotion,
+              and authenticity across India.
             </p>
+
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center hover:bg-gold/40 transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center hover:bg-gold/40 transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center hover:bg-gold/40 transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
+              {[Instagram, Facebook, Youtube].map((Icon, i) => (
+                <a
+                  key={i}
+                  href="#"
+                  className="w-10 h-10 flex items-center justify-center border border-emerald-dark/20 text-emerald-dark/70 hover:text-gold hover:border-gold transition-colors"
+                >
+                  <Icon className="w-5 h-5" />
+                </a>
+              ))}
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-heading text-lg font-semibold mb-6 text-gold">Quick Links</h4>
-            <ul className="space-y-3">
-              {['Home', 'Packages', 'Gallery', 'Team', 'About', 'Contact'].map((link) => (
+            <h4 className="font-heading text-lg font-semibold text-emerald-dark mb-6">
+              Quick Links
+            </h4>
+            <ul className="space-y-3 text-xs font-semibold">
+              {['HOME', 'ABOUT', 'PACKAGES', 'GALLERY', 'TEAM', 'CONTACT'].map((link) => (
                 <li key={link}>
                   <Link
-                    href={link === 'Home' ? '/' : `/${link.toLowerCase()}`}
-                    className="text-primary-foreground/80 hover:text-gold transition-colors text-sm"
+                    href={link === 'HOME' ? '/' : `/#${link.toLowerCase()}`}
+                    className="text-emerald-dark/70 hover:text-gold transition-colors"
                   >
                     {link}
                   </Link>
@@ -55,54 +62,59 @@ export default function Footer() {
 
           {/* Services */}
           <div>
-            <h4 className="font-heading text-lg font-semibold mb-6 text-gold">Our Services</h4>
-            <ul className="space-y-3 text-sm text-primary-foreground/80">
+            <h4 className="font-heading text-lg font-semibold text-emerald-dark mb-6">
+              Services
+            </h4>
+            <ul className="space-y-3 text-sm text-emerald-dark/70">
               <li>Wedding Photography</li>
-              <li>Cinematic Films</li>
+              <li>Cinematic Wedding Films</li>
               <li>Pre-Wedding Shoots</li>
               <li>Drone Coverage</li>
-              <li>Photo Albums</li>
+              <li>Albums & Prints</li>
               <li>Same Day Edits</li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="font-heading text-lg font-semibold mb-6 text-gold">Contact Us</h4>
-            <ul className="space-y-4">
+            <h4 className="font-heading text-lg font-semibold text-emerald-dark mb-6">
+              Contact
+            </h4>
+            <ul className="space-y-4 text-sm text-emerald-dark/70">
               <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gold mt-0.5" />
-                <span className="text-sm text-primary-foreground/80">
-                  42, Royal Plaza, MG Road<br />
-                  New Delhi - 110001, India
+                <MapPin className="w-5 h-5 text-gold mt-1" />
+                <span>
+                  Gandhinagar 2nd Lane Extension<br />
+                  Berhampur, Odisha - 760001
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-gold" />
-                <span className="text-sm text-primary-foreground/80">+91 98765 43210</span>
+                +91 9XXXXXXXXX
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-gold" />
-                <span className="text-sm text-primary-foreground/80">info@royalweddings.com</span>
+                info@filterfilm.in
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-gold/20">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-primary-foreground/60">
-              © 2024 Royal Weddings Studio. All rights reserved.
-            </p>
-            <div className="flex gap-6 text-sm text-primary-foreground/60">
-              <a href="#" className="hover:text-gold transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-gold transition-colors">Terms of Service</a>
-            </div>
+        <div className="mt-14 pt-6 border-t border-emerald-dark/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-emerald-dark/50">
+          <p>
+            © {new Date().getFullYear()} Filter Film Studio. All rights reserved.
+          </p>
+          <div className="flex gap-6">
+            <Link href="#" className="hover:text-gold transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="#" className="hover:text-gold transition-colors">
+              Terms of Service
+            </Link>
           </div>
         </div>
       </div>
     </footer>
   );
-};
-
+}

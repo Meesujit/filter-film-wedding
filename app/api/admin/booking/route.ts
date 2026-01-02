@@ -63,10 +63,11 @@ export async function POST(req: Request) {
         // Create new booking - NO assignedTeam during creation
         const newBooking = await bookingService.createBooking({
             userId: session.id,
-            packageId: data.packageId,
+            packages: data.packages,
             eventType: data.eventType,
             eventName: data.eventName,
-            date: data.date,
+            startDate: data.startDate,
+            endDate: data.endDate,
             venue: data.venue,
             status: 'pending', // Always pending for new bookings
             totalAmount: data.totalAmount,

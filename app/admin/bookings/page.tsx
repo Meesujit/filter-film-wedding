@@ -1,11 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Search, Check, X, Eye, Loader2, Edit2, Trash2, ChevronDown } from 'lucide-react';
+import { Search, Check, X, Eye, Loader2, Edit2, Trash2, ChevronDown, Calendar } from 'lucide-react';
 import { Input } from '@/app/src/components/ui/input';
 import { Button } from '@/app/src/components/ui/button';
 import { Booking } from '@/app/types/booking';
 import toast from 'react-hot-toast';
 import { Label } from '@/app/src/components/ui/label';
+
+interface PackageGroup {
+  id: string;
+  category: string;
+  packages: Package[];
+}
 
 interface Package {
   id: string;
@@ -28,7 +34,7 @@ const bookingStatuses = [
 
 export default function ManageBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [packageGroups, setPackageGroups] = useState<PackageGroup[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,20 +64,21 @@ export default function ManageBookings() {
         setBookings(bookingsData.bookings || []);
       }
       if (packagesRes.ok) {
-        setPackages(packagesData.packages || []);
+        setPackageGroups(packagesData.packages || []);
       }
       if (teamRes.ok) {
         setTeam(teamData.team || []);
       }
     } catch (error) {
-      toast.success('Error fetching data');
+      toast.error('Error fetching data');
     } finally {
       setLoading(false);
     }
   };
 
-  const getPackageById = (packageId: string) => {
-    return packages.find(pkg => pkg.id === packageId);
+  const getPackageById = (groupId: string, packageId: string) => {
+    const group = packageGroups.find(g => g.id === groupId);
+    return group?.packages.find(pkg => pkg.id === packageId);
   };
 
   const formatPrice = (price: number) => {
@@ -80,6 +87,15 @@ export default function ManageBookings() {
       currency: 'INR',
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+    return start === end ? start : `${start} - ${end}`;
   };
 
   const filteredBookings = bookings.filter(booking => {
@@ -110,34 +126,6 @@ export default function ManageBookings() {
     }
   };
 
-  const handleAssignTeam = async (bookingId: string, teamIds: string[]) => {
-    try {
-      const response = await fetch(`/api/admin/booking/${bookingId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignedTeam: teamIds }),
-      });
-
-      if (response.ok) {
-        const { booking: updatedBooking } = await response.json();
-        setBookings(prev => prev.map(b => b.id === bookingId ? updatedBooking : b));
-
-        if (selectedBooking?.id === bookingId) {
-          setSelectedBooking(updatedBooking);
-        }
-        if (editedBooking?.id === bookingId) {
-          setEditedBooking(updatedBooking);
-        }
-        toast.success('Team updated successfully');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to update team');
-      }
-    } catch (error) {
-      toast.error('Failed to update team');
-    }
-  };
-
   const toggleTeamMember = (teamId: string) => {
     if (!editedBooking) return;
 
@@ -149,17 +137,38 @@ export default function ManageBookings() {
     setEditedBooking({ ...editedBooking, assignedTeam: newTeam });
   };
 
+  const updatePackageDate = (packageId: string, field: 'startDate' | 'endDate', value: string) => {
+    if (!editedBooking) return;
+
+    const updatedPackages = editedBooking.packages.map(pkg =>
+      pkg.packageId === packageId ? { ...pkg, [field]: value } : pkg
+    );
+
+    setEditedBooking({ ...editedBooking, packages: updatedPackages });
+  };
+
   const handleSaveEdit = async () => {
     if (!editedBooking) return;
+
+    // Validate package dates
+    for (const pkg of editedBooking.packages) {
+      if (new Date(pkg.startDate) > new Date(pkg.endDate)) {
+        toast.error(`Invalid dates for ${pkg.name}: start date must be before end date`);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const response = await fetch(`/api/admin/booking/${editedBooking.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          packages: editedBooking.packages,
           eventName: editedBooking.eventName,
           eventType: editedBooking.eventType,
-          date: editedBooking.date,
+          startDate: editedBooking.startDate,
+          endDate: editedBooking.endDate,
           venue: editedBooking.venue,
           totalAmount: editedBooking.totalAmount,
           paidAmount: editedBooking.paidAmount,
@@ -221,7 +230,6 @@ export default function ManageBookings() {
     return team.find(m => m.id === memberId)?.name || 'Unknown';
   };
 
-
   return (
     <div className="space-y-0 flex flex-col gap-6">
       <div className='flex item-center justify-between'>
@@ -261,8 +269,8 @@ export default function ManageBookings() {
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-4 text-sm font-medium text-muted-foreground">Event</th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Package</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date Range</th>
+                <th className="text-left p-4 text-sm font-medium text-muted-foreground">Packages</th>
                 <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
                 <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
                 <th className="text-left p-4 text-sm font-medium text-muted-foreground">Assigned</th>
@@ -278,24 +286,25 @@ export default function ManageBookings() {
                 </tr>
               ) : filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground h-72 align-middle flex flex-col items-center justify-center">
-                    No bookings found
+                  <td colSpan={7} className="h-72 text-center align-middle text-sm text-muted-foreground">
+                    No bookings yet.
                   </td>
                 </tr>
               ) : (
                 filteredBookings.map((booking) => {
-                  const pkg = getPackageById(booking.packageId);
                   const assignedCount = booking.assignedTeam?.length || 0;
                   return (
-                    <tr key={booking.id} className="hover:bg-muted/30 crursor-pointer">
+                    <tr key={booking.id} className="hover:bg-muted/30 cursor-pointer">
                       <td className="p-4">
                         <p className="font-medium text-foreground">{booking.eventName}</p>
                         <p className="text-sm text-muted-foreground">{booking.venue}</p>
                       </td>
                       <td className="p-4 text-sm text-foreground">
-                        {new Date(booking.date).toLocaleDateString()}
+                        {formatDateRange(booking.startDate, booking.endDate)}
                       </td>
-                      <td className="p-4 text-sm text-foreground">{pkg?.name || 'N/A'}</td>
+                      <td className="p-4 text-sm text-foreground">
+                        {booking.packages.length} package{booking.packages.length !== 1 ? 's' : ''}
+                      </td>
                       <td className="p-4">
                         <p className="text-sm font-medium text-foreground">{formatPrice(booking.totalAmount)}</p>
                         <p className="text-xs text-muted-foreground">Paid: {formatPrice(booking.paidAmount)}</p>
@@ -304,12 +313,13 @@ export default function ManageBookings() {
                         <select
                           value={booking.status}
                           onChange={(e) => handleStatusChange(booking.id, e.target.value as Booking['status'])}
-                          className={`text-xs px-2 py-1 rounded-full border-0 ${booking.status === 'approved' ? 'bg-green-100 text-green-700' :
+                          className={`text-xs px-2 py-1 rounded-full border-0 ${
+                            booking.status === 'approved' ? 'bg-green-100 text-green-700' :
                             booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              booking.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                                booking.status === 'completed' ? 'bg-purple-100 text-purple-700' :
-                                  'bg-red-100 text-red-700'
-                            }`}
+                            booking.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                            booking.status === 'completed' ? 'bg-purple-100 text-purple-700' :
+                            'bg-red-100 text-red-700'
+                          }`}
                         >
                           {bookingStatuses.map(s => (
                             <option key={s.value} value={s.value}>{s.label}</option>
@@ -342,7 +352,7 @@ export default function ManageBookings() {
       {/* Booking Detail Modal */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/50">
-          <div className="bg-card rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-elegant animate-scale-in">
+          <div className="bg-card rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-elegant animate-scale-in">
             <div className="p-6 border-b border-border flex items-center justify-between">
               <h2 className="font-heading text-xl font-semibold">
                 {isEditMode ? 'Edit Booking' : 'Booking Details'}
@@ -384,23 +394,67 @@ export default function ManageBookings() {
                       />
                     </div>
                     <div>
-                      <Label className="text-sm text-muted-foreground">Date</Label>
+                      <Label className="text-sm text-muted-foreground">Venue</Label>
                       <Input
-                        type="date"
-                        value={editedBooking.date}
-                        onChange={(e) => setEditedBooking({ ...editedBooking, date: e.target.value })}
+                        value={editedBooking.venue}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, venue: e.target.value })}
                         className="mt-1"
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Venue</Label>
-                    <Input
-                      value={editedBooking.venue}
-                      onChange={(e) => setEditedBooking({ ...editedBooking, venue: e.target.value })}
-                      className="mt-1"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Overall Start Date</Label>
+                      <Input
+                        type="date"
+                        value={editedBooking.startDate}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, startDate: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm text-muted-foreground">Overall End Date</Label>
+                      <Input
+                        type="date"
+                        value={editedBooking.endDate}
+                        onChange={(e) => setEditedBooking({ ...editedBooking, endDate: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
+
+                  {/* Package Dates */}
+                  <div className="border-t pt-4">
+                    <Label className="text-sm text-muted-foreground mb-3 block">Package Schedules</Label>
+                    <div className="space-y-3">
+                      {editedBooking.packages.map(pkg => (
+                        <div key={pkg.packageId} className="bg-muted/30 rounded-lg p-3">
+                          <p className="font-medium text-sm mb-2">{pkg.name}</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Start Date</Label>
+                              <Input
+                                type="date"
+                                value={pkg.startDate}
+                                onChange={(e) => updatePackageDate(pkg.packageId, 'startDate', e.target.value)}
+                                className="mt-1 h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">End Date</Label>
+                              <Input
+                                type="date"
+                                value={pkg.endDate}
+                                onChange={(e) => updatePackageDate(pkg.packageId, 'endDate', e.target.value)}
+                                className="mt-1 h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm text-muted-foreground">Total Amount</Label>
@@ -412,7 +466,7 @@ export default function ManageBookings() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground">Paid Amount</label>
+                      <Label className="text-sm text-muted-foreground">Paid Amount</Label>
                       <Input
                         type="number"
                         value={editedBooking.paidAmount}
@@ -455,12 +509,10 @@ export default function ManageBookings() {
                             : 'Select team members'}
                         </span>
                         <ChevronDown
-                          className={`w-4 h-4 transition-transform ${showTeamDropdown ? 'rotate-180' : ''
-                            }`}
+                          className={`w-4 h-4 transition-transform ${showTeamDropdown ? 'rotate-180' : ''}`}
                         />
                       </button>
 
-                      {/* Dropdown */}
                       {showTeamDropdown && (
                         <div className="absolute z-20 mt-1 w-full rounded-md border bg-card shadow-lg max-h-60 overflow-y-auto">
                           {team.length === 0 ? (
@@ -470,7 +522,6 @@ export default function ManageBookings() {
                           ) : (
                             team.map(member => {
                               const isSelected = editedBooking.assignedTeam?.includes(member.id);
-
                               return (
                                 <button
                                   key={member.id}
@@ -478,16 +529,11 @@ export default function ManageBookings() {
                                   onClick={() => toggleTeamMember(member.id)}
                                   className="w-full px-3 py-2 flex items-center gap-2 text-sm hover:bg-muted text-left"
                                 >
-                                  <span
-                                    className={`w-4 h-4 rounded border flex items-center justify-center
-                    ${isSelected
-                                        ? 'bg-primary border-primary text-primary-foreground'
-                                        : 'border-input'
-                                      }`}
-                                  >
+                                  <span className={`w-4 h-4 rounded border flex items-center justify-center ${
+                                    isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-input'
+                                  }`}>
                                     {isSelected && <Check className="w-3 h-3" />}
                                   </span>
-
                                   <span>{member.name}</span>
                                 </button>
                               );
@@ -507,21 +553,10 @@ export default function ManageBookings() {
                     )}
                   </div>
                   <div className="flex gap-2 pt-4 justify-end">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={cancelEdit}
-                      disabled={loading}
-                    >
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={loading}>
                       Cancel
                     </Button>
-
-                    <Button
-                      size="sm"
-                      onClick={handleSaveEdit}
-                      disabled={loading}
-                      className="min-w-[140px] flex items-center justify-center"
-                    >
+                    <Button size="sm" onClick={handleSaveEdit} disabled={loading} className="min-w-[140px] flex items-center justify-center">
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -541,8 +576,11 @@ export default function ManageBookings() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sm text-muted-foreground">Date</Label>
-                      <p className="font-medium">{new Date(selectedBooking.date).toLocaleDateString()}</p>
+                      <Label className="text-sm text-muted-foreground">Date Range</Label>
+                      <p className="font-medium flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {formatDateRange(selectedBooking.startDate, selectedBooking.endDate)}
+                      </p>
                     </div>
                     <div>
                       <Label className="text-sm text-muted-foreground">Type</Label>
@@ -552,6 +590,21 @@ export default function ManageBookings() {
                   <div>
                     <Label className="text-sm text-muted-foreground">Venue</Label>
                     <p className="font-medium">{selectedBooking.venue}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-muted-foreground mb-2 block">Packages</Label>
+                    <div className="space-y-2">
+                      {selectedBooking.packages.map(pkg => (
+                        <div key={pkg.packageId} className="bg-muted/30 rounded-lg p-3">
+                          <p className="font-medium">{pkg.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{pkg.category}</p>
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatDateRange(pkg.startDate, pkg.endDate)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -565,12 +618,13 @@ export default function ManageBookings() {
                   </div>
                   <div>
                     <Label className="text-sm text-muted-foreground">Status</Label>
-                    <p className={`inline-block mt-1 text-xs px-3 py-1 rounded-full ${selectedBooking.status === 'approved' ? 'bg-green-100 text-green-700' :
+                    <p className={`inline-block mt-1 text-xs px-3 py-1 rounded-full ${
+                      selectedBooking.status === 'approved' ? 'bg-green-100 text-green-700' :
                       selectedBooking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        selectedBooking.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                          selectedBooking.status === 'completed' ? 'bg-purple-100 text-purple-700' :
-                            'bg-red-100 text-red-700'
-                      }`}>
+                      selectedBooking.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                      selectedBooking.status === 'completed' ? 'bg-purple-100 text-purple-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
                       {bookingStatuses.find(s => s.value === selectedBooking.status)?.label}
                     </p>
                   </div>
@@ -602,4 +656,4 @@ export default function ManageBookings() {
       )}
     </div>
   );
-};
+}

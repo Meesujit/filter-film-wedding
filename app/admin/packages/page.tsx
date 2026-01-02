@@ -1,36 +1,41 @@
 'use client'
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X, Upload, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Upload, Loader2, Package as PackageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/app/src/components/ui/button';
-import { Package } from '@/app/types/package';
+import { Packages, Category, CATEGORY } from '@/app/types/package';
 import { Input } from '@/app/src/components/ui/input';
 import { Textarea } from '@/app/src/components/ui/textarea';
 import toast from 'react-hot-toast';
 import DeleteModal from '@/app/src/components/common/modal/delete-modal';
+import { v4 as uuidv4 } from "uuid";
 
 interface Props {
-    initialPackages?: Package[];
+    initialPackages?: Packages[];
 }
 
 export default function PackageManagement({ initialPackages }: Props) {
     const router = useRouter();
 
-    const [packages, setPackages] = useState<Package[]>(initialPackages || []);
+    const [packages, setPackages] = useState<Packages[]>(initialPackages || []);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingPackageGroupId, setEditingPackageGroupId] = useState<string | null>(null);
+    const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isFetchingPackages, setIsFetchingPackages] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [deletePackageGroupId, setDeletePackageGroupId] = useState<string | null>(null);
+    const [deletePackageId, setDeletePackageId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [localPreview, setLocalPreview] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
+        id: '',
         name: '',
         price: '',
         description: '',
@@ -38,20 +43,15 @@ export default function PackageManagement({ initialPackages }: Props) {
         duration: '',
         preview: '',
         popular: false,
+        category: 'wedding' as Category,
     });
 
-    /* ---------------------------------------------
-       Fetch packages if not provided from server
-    ---------------------------------------------- */
     useEffect(() => {
         if (!initialPackages || initialPackages.length === 0) {
             fetchPackages();
         }
     }, []);
 
-    /* ---------------------------------------------
-       Cleanup local preview object URL
-    ---------------------------------------------- */
     useEffect(() => {
         return () => {
             if (localPreview) {
@@ -71,11 +71,11 @@ export default function PackageManagement({ initialPackages }: Props) {
             if (response.ok && data.packages) {
                 setPackages(Array.isArray(data.packages) ? data.packages : []);
             } else {
-                alert('Failed to load packages');
+                toast.error(data.error || 'Failed to load packages');
             }
         } catch (error) {
             console.error(error);
-            alert('Failed to load packages');
+            toast.error('Failed to load packages');
         } finally {
             setIsFetchingPackages(false);
         }
@@ -83,6 +83,7 @@ export default function PackageManagement({ initialPackages }: Props) {
 
     const resetForm = () => {
         setFormData({
+            id: '',
             name: '',
             price: '',
             description: '',
@@ -90,16 +91,22 @@ export default function PackageManagement({ initialPackages }: Props) {
             duration: '',
             preview: '',
             popular: false,
+            category: 'wedding',
         });
-        setEditingId(null);
+        setEditingPackageGroupId(null);
+        setEditingPackageId(null);
         setSelectedFile(null);
         setLocalPreview(null);
     };
 
-    const openModal = (pkg?: Package) => {
-        if (pkg) {
-            setEditingId(pkg.id);
+    const openModal = (packageGroup?: Packages, packageId?: string) => {
+        if (packageGroup && packageId !== undefined) {
+            const pkg = packageGroup.packages.find(p => p.id === packageId);
+            if (!pkg) return;
+            setEditingPackageGroupId(packageGroup.id);
+            setEditingPackageId(pkg.id);
             setFormData({
+                id: pkg.id,
                 name: pkg.name,
                 price: pkg.price.toString(),
                 description: pkg.description,
@@ -107,6 +114,7 @@ export default function PackageManagement({ initialPackages }: Props) {
                 duration: pkg.duration,
                 preview: pkg.preview,
                 popular: pkg.popular || false,
+                category: packageGroup.category,
             });
         } else {
             resetForm();
@@ -114,14 +122,12 @@ export default function PackageManagement({ initialPackages }: Props) {
         setIsModalOpen(true);
     };
 
-    const openDeleteModal = (id: string) => {
-        setDeleteId(id);
+    const openDeleteModal = (packageGroupId: string, packageId: string) => {
+        setDeletePackageGroupId(packageGroupId);
+        setDeletePackageId(packageId);
         setDeleteOpen(true);
     }
 
-    /* ---------------------------------------------
-       Image upload (ONLY on submit)
-    ---------------------------------------------- */
     const uploadImage = async (): Promise<string> => {
         if (!selectedFile) {
             throw new Error('No file selected');
@@ -144,9 +150,6 @@ export default function PackageManagement({ initialPackages }: Props) {
         return url as string;
     };
 
-    /* ---------------------------------------------
-       Submit form
-    ---------------------------------------------- */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -161,6 +164,7 @@ export default function PackageManagement({ initialPackages }: Props) {
             }
 
             const packageData = {
+                id: uuidv4(),
                 name: formData.name,
                 price: parseInt(formData.price),
                 description: formData.description,
@@ -170,36 +174,93 @@ export default function PackageManagement({ initialPackages }: Props) {
                     imageUrl ||
                     'https://images.unsplash.com/photo-1519741497674-611481863552?w=800',
                 popular: formData.popular,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             };
 
-            const response = await fetch(
-                editingId
-                    ? `/api/admin/package/${editingId}`
-                    : '/api/admin/package',
-                {
-                    method: editingId ? 'PATCH' : 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(packageData),
-                    credentials: 'include',
+            // Check if we're editing or creating
+            if (editingPackageGroupId !== null && editingPackageId !== null) {
+                // Editing existing package
+                const response = await fetch(
+                    `/api/admin/package/${editingPackageGroupId}`,
+                    {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            packageId: editingPackageId,
+                            packageData: packageData,
+                        }),
+                        credentials: 'include',
+                    }
+                );
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to update package');
                 }
-            );
 
-            const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to save package');
+                setPackages(prev =>
+                    prev.map(pg =>
+                        pg.id === editingPackageGroupId ? result.package : pg
+                    )
+                );
+
+                toast.success('Package updated successfully');
+            } else {
+                // Creating new package - need to find or create package group
+                const existingGroup = packages.find(pg => pg.category === formData.category);
+
+                if (existingGroup) {
+                    // Add to existing group
+                    const response = await fetch(
+                        `/api/admin/package/${existingGroup.id}`,
+                        {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                packageData: packageData,
+                                addNew: true,
+                            }),
+                            credentials: 'include',
+                        }
+                    );
+
+                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Failed to create package');
+                    }
+
+                    setPackages(prev =>
+                        prev.map(pg =>
+                            pg.id === existingGroup.id ? result.package : pg
+                        )
+                    );
+                } else {
+                    // Create new group
+                    const response = await fetch('/api/admin/package', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            category: formData.category,
+                            packages: [packageData],
+                        }),
+                        credentials: 'include',
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Failed to create package');
+                    }
+
+                    setPackages(prev => [...prev, result.package]);
+                }
+
+                toast.success('Package created successfully');
             }
-
-            setPackages(prev =>
-                editingId
-                    ? prev.map(p => (p.id === editingId ? result.package : p))
-                    : [...prev, result.package]
-            );
 
             setIsModalOpen(false);
             resetForm();
             router.refresh();
-
-            toast.success(`Package ${editingId ? 'updated' : 'created'} successfully`);
         } catch (error) {
             console.error(error);
             toast.error('Something went wrong');
@@ -210,18 +271,33 @@ export default function PackageManagement({ initialPackages }: Props) {
     };
 
     const handleDelete = async () => {
-        if (!deleteId) return;
+        if (deletePackageGroupId === null || deletePackageId === null) return;
 
         setDeleting(true);
 
         try {
-            const response = await fetch(`/api/admin/package/${deleteId}`, {
+            const response = await fetch(`/api/admin/package/${deletePackageGroupId}`, {
                 method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ packageId: deletePackageId }),
                 credentials: 'include',
             });
 
             if (response.ok) {
-                setPackages(prev => prev.filter(p => p.id !== deleteId));
+                const result = await response.json();
+
+                if (result.deletedGroup) {
+                    // Entire group was deleted
+                    setPackages(prev => prev.filter(pg => pg.id !== deletePackageGroupId));
+                } else {
+                    // Just one package was removed
+                    setPackages(prev =>
+                        prev.map(pg =>
+                            pg.id === deletePackageGroupId ? result.package : pg
+                        )
+                    );
+                }
+
                 router.refresh();
                 toast.success('Package deleted successfully');
             } else {
@@ -234,7 +310,8 @@ export default function PackageManagement({ initialPackages }: Props) {
         } finally {
             setDeleting(false);
             setDeleteOpen(false);
-            setDeleteId(null);
+            setDeletePackageGroupId(null);
+            setDeletePackageId(null);
         }
     };
 
@@ -245,11 +322,7 @@ export default function PackageManagement({ initialPackages }: Props) {
             maximumFractionDigits: 0,
         }).format(price);
 
-    /* ---------------------------------------------
-       Render
-    ---------------------------------------------- */
     return (
-
         <>
             <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
@@ -265,7 +338,7 @@ export default function PackageManagement({ initialPackages }: Props) {
                     </Button>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                     {isFetchingPackages ? (
                         <div className="h-72 flex flex-col items-center justify-center bg-card rounded-xl">
                             <Loader2 className="w-8 h-8 animate-spin mb-2" />
@@ -273,70 +346,81 @@ export default function PackageManagement({ initialPackages }: Props) {
                         </div>
                     ) : packages.length === 0 ? (
                         <div className="h-72 flex flex-col items-center justify-center bg-card rounded-xl">
-                            No packages found
+                            <PackageIcon className="w-24 h-24 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground">No packages found.</p>
+                            <Button variant="royal" className="mt-4" onClick={() => openModal()}>
+                                <Plus className="w-4 h-4 mr-1" />
+                                Create your first package
+                            </Button>
                         </div>
                     ) : (
-                        packages.map(pkg => (
-                            <div key={pkg.id} className="bg-card rounded-xl shadow-card overflow-hidden">
-                                <div className="flex flex-col md:flex-row">
-                                    <Image
-                                        src={pkg.preview}
-                                        alt={pkg.name}
-                                        width={192}
-                                        height={192}
-                                        className="w-full md:w-48 h-48 object-cover"
-                                    />
-                                    <div className="flex-1 p-6">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div>
-                                                <h3 className="font-heading text-xl font-semibold text-foreground flex items-center gap-2">
-                                                    {pkg.name}
-                                                    {pkg.popular && (
-                                                        <span className="text-xs px-2 py-1 bg-gold text-maroon-dark rounded-full">Popular</span>
-                                                    )}
-                                                </h3>
-                                                <p className="text-gold font-bold">{formatPrice(pkg.price)}</p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => openModal(pkg)}>
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => openDeleteModal(pkg.id)}>
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
+                        packages.map(packageGroup => (
+                            <div key={packageGroup.id}>
+                                <h2 className="text-xl font-semibold mb-3 capitalize">{packageGroup.category}</h2>
+                                <div className="grid gap-4">
+                                    {packageGroup?.packages?.map((pkg) => (
+                                        <div key={pkg.id} className="bg-card rounded-xl shadow-card overflow-hidden">
+                                            <div className="flex flex-col md:flex-row">
+                                                <Image
+                                                    src={pkg.preview}
+                                                    alt={pkg.name}
+                                                    width={192}
+                                                    height={192}
+                                                    className="w-full md:w-48 h-48 object-cover"
+                                                />
+                                                <div className="flex-1 p-6">
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div>
+                                                            <h3 className="font-heading text-xl font-semibold text-foreground flex items-center gap-2">
+                                                                {pkg.name}
+                                                                {pkg.popular && (
+                                                                    <span className="text-xs px-2 py-1 bg-gold text-maroon-dark rounded-full">Popular</span>
+                                                                )}
+                                                            </h3>
+                                                            <p className="text-gold font-bold">{formatPrice(pkg.price)}</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Button variant="ghost" size="icon" onClick={() => openModal(packageGroup, pkg.id)}>
+                                                                <Edit className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => openDeleteModal(packageGroup.id, pkg.id)}>
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-muted-foreground text-sm mb-3">{pkg.description}</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {pkg.deliverables.slice(0, 3).map((d, i) => (
+                                                            <span key={i} className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                                                                {d}
+                                                            </span>
+                                                        ))}
+                                                        {pkg.deliverables.length > 3 && (
+                                                            <span className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                                                                +{pkg.deliverables.length - 3} more
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <p className="text-muted-foreground text-sm mb-3">{pkg.description}</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {pkg.deliverables.slice(0, 3).map((d, i) => (
-                                                <span key={i} className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
-                                                    {d}
-                                                </span>
-                                            ))}
-                                            {pkg.deliverables.length > 3 && (
-                                                <span className="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
-                                                    +{pkg.deliverables.length - 3} more
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
 
-                {/* MODAL */}
                 {isModalOpen && (
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                         <div className="bg-card w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-xl shadow-2xl">
                             <div className="flex justify-between items-center border-b px-6 py-4">
                                 <div>
                                     <h2 className="text-lg font-bold">
-                                        {editingId ? 'Edit Package' : 'Create Package'}
+                                        {editingPackageGroupId ? 'Edit Package' : 'Create Package'}
                                     </h2>
                                     <p className="text-sm text-muted-foreground">
-                                        {editingId ? 'Update package details' : 'Add a new package'}
+                                        {editingPackageGroupId ? 'Update package details' : 'Add a new package'}
                                     </p>
                                 </div>
                                 <button onClick={() => setIsModalOpen(false)}>
@@ -381,6 +465,25 @@ export default function PackageManagement({ initialPackages }: Props) {
                                         </label>
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Category</label>
+                                    <select
+                                        required
+                                        value={formData.category}
+                                        onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
+                                        className="w-full px-3 py-2 border rounded-md"
+                                        disabled={!!editingPackageGroupId}
+                                    >
+                                        {CATEGORY.map(cat => (
+                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                        ))}
+                                    </select>
+                                    {editingPackageGroupId && (
+                                        <p className="text-xs text-muted-foreground mt-1">Category cannot be changed when editing</p>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium mb-1">Package Name</label>
                                     <Input
@@ -443,7 +546,7 @@ export default function PackageManagement({ initialPackages }: Props) {
                                     </Button>
                                     <Button variant="royal" type="submit" disabled={loading}>
                                         {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                                        {editingId ? 'Update Package' : 'Create Package'}
+                                        {editingPackageGroupId ? 'Update Package' : 'Create Package'}
                                     </Button>
                                 </div>
                             </form>
@@ -460,7 +563,6 @@ export default function PackageManagement({ initialPackages }: Props) {
                 title="Delete Package"
                 description="Are you sure you want to delete this package? This action cannot be undone."
             />
-
         </>
     );
 }

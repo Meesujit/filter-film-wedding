@@ -7,10 +7,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Loader2 } from 'lucide-react';
-
-interface SignUpFormProps {
-  callbackUrl?: string;
-}
+import toast from 'react-hot-toast';
 
 function getDashboardByRole(role: string): string {
   switch (role) {
@@ -21,7 +18,7 @@ function getDashboardByRole(role: string): string {
   }
 }
 
-export default function SignUpForm({ callbackUrl }: SignUpFormProps) {
+export default function SignUpForm({ callbackUrl }: { callbackUrl?: string }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,7 +26,9 @@ export default function SignUpForm({ callbackUrl }: SignUpFormProps) {
     confirmPassword: '',
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   const { signUpWithEmail, signInWithGoogle } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,245 +38,250 @@ export default function SignUpForm({ callbackUrl }: SignUpFormProps) {
   const validateForm = () => {
     if (!formData.name.trim()) {
       setError('Name is required');
+      toast.error('Name is required');
       return false;
     }
-
     if (!formData.email.trim()) {
       setError('Email is required');
+      toast.error('Email is required');
       return false;
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Invalid email address');
+      toast.error('Invalid email address');
       return false;
     }
-
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters');
+      toast.error('Password must be at least 6 characters');
       return false;
     }
-
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      toast.error('Passwords do not match');
       return false;
     }
-
     return true;
   };
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!validateForm()) return;
 
-    if (!validateForm()) {
-      return;
-    }
-
-    setLoading(true);
+    setEmailLoading(true);
 
     try {
       await signUpWithEmail(formData.email, formData.password, formData.name);
-      
+
+      // Wait for auth context to update
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
+      // Get the session to retrieve user role
       const response = await fetch('/api/auth/session');
       if (response.ok) {
         const { user } = await response.json();
         const redirectUrl = callbackUrl || getDashboardByRole(user?.role || 'customer');
+        toast.success('Account created successfully!');
         window.location.href = redirectUrl;
       } else {
+        // Fallback to customer dashboard if session check fails
+        toast.success('Account created successfully!');
         window.location.href = callbackUrl || '/customer/dashboard';
       }
     } catch (err: any) {
       console.error('Sign up error:', err);
+
+      let errorMessage = 'Failed to create account';
+
       if (err.code === 'auth/email-already-in-use') {
-        setError('Email already in use. Please sign in instead.');
+        errorMessage = 'Email already in use. Please sign in instead.';
       } else if (err.code === 'auth/invalid-email') {
-        setError('Invalid email address');
+        errorMessage = 'Invalid email address';
       } else if (err.code === 'auth/weak-password') {
-        setError('Password is too weak. Use at least 6 characters');
+        errorMessage = 'Password is too weak. Use at least 6 characters';
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Email/password sign up is not enabled');
-      } else {
-        setError(err.message || 'Failed to create account');
+        errorMessage = 'Email/password sign up is not enabled';
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-      setLoading(false);
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setEmailLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
     setError('');
-    setLoading(true);
+    setGoogleLoading(true);
 
     try {
       await signInWithGoogle();
-      
+
+      // Wait for auth context to update
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
+      // Get the session to retrieve user role
       const response = await fetch('/api/auth/session');
       if (response.ok) {
         const { user } = await response.json();
         const redirectUrl = callbackUrl || getDashboardByRole(user?.role || 'customer');
+        toast.success('Signed up successfully!');
         window.location.href = redirectUrl;
       } else {
+        // Fallback to customer dashboard if session check fails
+        toast.success('Signed up successfully!');
         window.location.href = callbackUrl || '/customer/dashboard';
       }
     } catch (err: any) {
       console.error('Google sign up error:', err);
+
+      let errorMessage = 'Failed to sign up with Google';
+
       if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign up cancelled');
+        errorMessage = 'Sign up cancelled';
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Popup blocked. Please allow popups for this site');
+        errorMessage = 'Popup blocked. Please allow popups for this site';
       } else if (err.code === 'auth/account-exists-with-different-credential') {
-        setError('An account already exists with this email using a different sign-in method');
-      } else {
-        setError(err.message || 'Failed to sign up with Google');
+        errorMessage = 'An account already exists with this email using a different sign-in method';
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-      setLoading(false);
+
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setGoogleLoading(false);
     }
   };
 
+  const anyLoading = emailLoading || googleLoading;
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-card rounded-sm shadow-md p-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2 text-popover-foreground">Create Account</h2>
-          <p className="text-sm text-muted-foreground">Sign up to get started with Filter Film Studio.</p>
+    <div className="w-full max-w-lg mx-auto p-8">
+      <h2 className="text-2xl font-bold text-emerald mb-2">Create Account</h2>
+      <p className="text-muted-foreground mb-6 text-md font-bold">
+        Sign up to get started.
+      </p>
+
+      {error && (
+        <div className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSignUp} className="grid grid-cols-1 md:grid-cols-2 gap-1">
+        {/* Full Name */}
+        <div className="md:col-span-2">
+          <Label htmlFor="name" className="block text-lg font-bold text-muted-foreground mb-1">
+            Full Name
+          </Label>
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="John Doe"
+            required
+            className="w-full border border-muted-foreground focus:border-emerald focus:ring-emerald"
+          />
         </div>
 
-        {error && (
-          <div className="mb-4 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm">
-            {error}
-          </div>
+        {/* Email */}
+        <div className="md:col-span-2">
+          <Label htmlFor="email" className="block text-lg font-bold text-muted-foreground mb-1">
+            Email
+          </Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="you@example.com"
+            required
+            className="w-full border border-muted-foreground focus:border-emerald focus:ring-emerald"
+          />
+        </div>
+
+        {/* Password */}
+        <div>
+          <Label htmlFor="password" className="block text-lg font-bold text-muted-foreground mb-1">
+            Password
+          </Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            required
+            className="w-full border border-muted-foreground focus:border-emerald focus:ring-emerald"
+          />
+        </div>
+
+        {/* Confirm Password */}
+        <div>
+          <Label htmlFor="confirmPassword" className="block text-lg font-bold text-muted-foreground mb-1">
+            Confirm Password
+          </Label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            placeholder="••••••••"
+            required
+            className="w-full border border-muted-foreground focus:border-emerald focus:ring-emerald"
+          />
+        </div>
+
+        {/* Submit Button */}
+        <div className="md:col-span-2 mt-2">
+          <Button
+            type="submit"
+            variant="royal"
+            className="w-full py-2.5 text-md font-bold"
+            disabled={anyLoading}
+          >
+            {emailLoading ? <Loader2 className="animate-spin w-4 h-4 mx-auto" /> : 'Create Account'}
+          </Button>
+        </div>
+      </form>
+
+      {/* Divider */}
+      <div className="text-center my-5 text-md font-bold">Or continue with</div>
+
+      {/* Google Button */}
+      <Button
+        type="button"
+        variant="elegant"
+        className="w-full py-2.5 flex items-center justify-center gap-3"
+        onClick={handleGoogleSignUp}
+        disabled={anyLoading}
+      >
+        {googleLoading ? (
+          <Loader2 className="animate-spin w-4 h-4 text-gold" />
+        ) : (
+          <>
+            <svg width="18" height="18" viewBox="0 0 18 18">
+              <path d="M17.64 9.20443C17.64 8.56625 17.5827 7.95262 17.4764 7.36353H9V10.8449H13.8436C13.635 11.9699 13.0009 12.9231 12.0477 13.5613V15.8194H14.9564C16.6582 14.2526 17.64 11.9453 17.64 9.20443Z" fill="#4285F4" />
+              <path d="M8.99976 18C11.4298 18 13.467 17.1941 14.9561 15.8195L12.0475 13.5613C11.2416 14.1013 10.2107 14.4204 8.99976 14.4204C6.65567 14.4204 4.67158 12.8372 3.96385 10.71H0.957031V13.0418C2.43794 15.9831 5.48158 18 8.99976 18Z" fill="#34A853" />
+              <path d="M3.96409 10.71C3.78409 10.17 3.68182 9.59318 3.68182 9C3.68182 8.40682 3.78409 7.82999 3.96409 7.28999V4.95818H0.957273C0.347727 6.17318 0 7.54773 0 9C0 10.4523 0.347727 11.8268 0.957273 13.0418L3.96409 10.71Z" fill="#FBBC05" />
+              <path d="M8.99976 3.57955C10.3211 3.57955 11.5075 4.03364 12.4402 4.92545L15.0216 2.34409C13.4629 0.891818 11.4257 0 8.99976 0C5.48158 0 2.43794 2.01682 0.957031 4.95818L3.96385 7.29C4.67158 5.16273 6.65567 3.57955 8.99976 3.57955Z" fill="#EA4335" />
+            </svg>
+            <span className="font-medium">Continue with Google</span>
+          </>
         )}
+      </Button>
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">
-              Full Name
-            </Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-muted-foreground rounded-md shadow-sm focus:ring-2 focus:ring-popover focus:border-popover focus:outline-none text-sm"
-              placeholder="John Doe"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">
-              Email Address
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-muted-foreground rounded-md shadow-sm focus:ring-2 focus:ring-popover focus:border-popover focus:outline-none text-sm"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="password" className="block text-sm font-medium text-muted-foreground mb-1">
-              Password
-            </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-muted-foreground rounded-md shadow-sm focus:ring-2 focus:ring-popover focus:border-popover focus:outline-none text-sm"
-              placeholder="At least 6 characters"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">Must be at least 6 characters</p>
-          </div>
-
-          <div>
-            <Label htmlFor="confirmPassword" className="block text-sm font-medium text-muted-foreground mb-1">
-              Confirm Password
-            </Label>
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-muted-foreground rounded-md shadow-sm focus:ring-2 focus:ring-popover focus:border-popover focus:outline-none text-sm"
-              placeholder="Re-enter password"
-            />
-          </div>
-
-          <div className="flex justify-end w-full">
-            <Button
-              onClick={handleEmailSignUp}
-              disabled={loading}
-              variant="royal"
-              size="lg"
-              className='w-full md:1/3 sm:1/4'
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Sign Up'
-              )}
-            </Button>
-          </div>
-        </div>
-
-        <div className="relative my-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
-          </div>
-        </div>
-
-        <button
-          onClick={handleGoogleSignUp}
-          disabled={loading}
-          className="w-full flex justify-center items-center py-2.5 px-4 border border-border rounded-md shadow-sm text-sm font-medium text-muted-foreground bg-card hover:bg-popover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-popover/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          {loading ? 'Signing up...' : 'Sign up with Google'}
-        </button>
-
-        <div className="text-center text-sm mt-5">
-          <span className="text-muted-foreground">Already have an account? </span>
-          <Link href="/signin" className="text-muted-foreground hover:text-muted-foreground font-medium">
-            Sign in
-          </Link>
-        </div>
-
-        <p className="text-xs text-center text-muted-foreground mt-4">
-          By signing up, you agree to our{' '}
-          <Link href="/terms" className="text-muted-foreground hover:text-muted-foreground">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link href="/privacy" className="text-muted-foreground hover:text-muted-foreground">
-            Privacy Policy
-          </Link>
-        </p>
+      <div className="text-center text-md mt-5">
+        Already have an account?{' '}
+        <Link href="/signin" className="text-emerald hover:underline">
+          Sign In
+        </Link>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ const TeamProfile = () => {
             {user?.image ? (
               <Image
                 src={user.image}
-                alt={user.name || 'Admin'}
+                alt={user.name || 'Team'}
                 fill
                 className="object-cover"
               />

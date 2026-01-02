@@ -1,18 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { Menu, X, User, Loader } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
+import {
+  Menu,
+  X,
+  User,
+  Loader,
+  ChevronDown,
+  LogOut,
+  LayoutDashboard,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Button } from '../ui/button';
 import { cn } from '@/app/lib/utils';
 import { useAuth } from '@/app/lib/firebase/auth-context';
 
-const navLinks = [
+const navLinksLeft = [
   { href: '/#home', label: 'Home' },
   { href: '/#about', label: 'About' },
   { href: '/#packages', label: 'Packages' },
+];
+
+const navLinksRight = [
   { href: '/#team', label: 'Our Founder' },
   { href: '/#gallery', label: 'Gallery' },
   { href: '/#contact', label: 'Contact' },
@@ -20,12 +31,33 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
 
+  // ✅ Correct typing
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ Click outside handler (safe)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target;
+      if (
+        dropdownRef.current &&
+        target instanceof Node &&
+        !dropdownRef.current.contains(target)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const getDashboardLink = () => {
     if (!user?.role) return '/signin';
-    
+
     switch (user.role) {
       case 'admin':
         return '/admin/dashboard';
@@ -49,31 +81,21 @@ export default function Navbar() {
   const isAuthenticated = !!user;
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
-      <nav className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/logo/filter-film-logo.svg"
-              alt="Filter Film Studio Logo"
-              width={150}
-              height={40}
-              className="w-60 h-32 object-cover"
-            />
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <nav className="container mx-auto px-6 py-1">
+        {/* ================= Desktop ================= */}
+        <div className="hidden lg:flex items-center justify-evenly h-24 relative">
+          {/* Left Links */}
+          <div className="flex items-center gap-6">
+            {navLinksLeft.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'text-lg font-bold transition-colors hover:text-primary relative py-2',
+                  'text-sm font-bold uppercase tracking-wider transition-colors',
                   pathname === link.href
-                    ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-gold'
-                    : 'text-muted-foreground'
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {link.label}
@@ -81,97 +103,149 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-4">
-            {loading ? (
-              <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />
-            ) : isAuthenticated ? (
-              <>
-                <Link href={getDashboardLink()}>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <User className="w-4 h-4" />
-                    Dashboard
+          {/* Center Logo */}
+          <Link href="/" className="">
+            <Image
+              src="/logo/logo3.png"
+              alt="Filter Film Studio Logo"
+              width={180}
+              height={60}
+              className="object-contain hover:scale-105 transition-transform"
+            />
+          </Link>
+
+          {/* Right Links + Auth */}
+          <div className="flex items-center gap-6">
+            {navLinksRight.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  'text-sm font-bold uppercase tracking-wider transition-colors',
+                  pathname === link.href
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            {/* Auth Section */}
+            <div className="absolute top-1/2 right-0 transform -translate-y-1/2">
+              {loading ? (
+                <Loader className="w-5 h-5 animate-spin text-primary" />
+              ) : isAuthenticated ? (
+                <div className="relative" ref={dropdownRef}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full gap-2"
+                    onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  >
+                    <span className=''>{user?.name}</span>
+                    <ChevronDown
+                      className={cn(
+                        'w-4 h-4 transition-transform',
+                        isDropdownOpen && 'rotate-180'
+                      )}
+                    />
+                  </Button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 mt-3 w-52 bg-background border border-border rounded-xl shadow-xl overflow-hidden z-50">
+                      <Link
+                        href={getDashboardLink()}
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsDropdownOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 text-sm w-full text-left hover:bg-destructive/10 text-destructive"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link href="/signin">
+                  <Button variant="outline" size="sm" className='rounded-full'>
+                    <User className="w-4 h-4 mr-2" />
+                    Login
                   </Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <Link href="/signin">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <User className="w-4 h-4" />
-                  Login
-                </Button>
-              </Link>
-            )}
-            <Link href="/#packages">
-              <Button className="bg-gradient-royal">Explore Packages</Button>
-            </Link>
+              )}
+            </div>
           </div>
+        </div>
 
-          {/* Mobile Menu Button */}
-          <button className="lg:hidden p-2" onClick={() => setIsOpen(!isOpen)}>
+        {/* ================= Mobile ================= */}
+        <div className="lg:hidden flex items-center justify-between h-20">
+          <Link href="/">
+            <Image
+              src="/logo/filter-film-logo.svg"
+              alt="Filter Film Studio Logo"
+              width={140}
+              height={40}
+              className="object-contain"
+            />
+          </Link>
+
+          <button
+            onClick={() => setIsOpen((prev) => !prev)}
+            className="p-3 rounded-xl hover:bg-muted"
+          >
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
-          <div className="lg:hidden flex flex-col gap-2 py-4 border-t border-border">
-            {navLinks.map((link) => (
+          <div className="lg:hidden py-6 space-y-3 border-t border-border">
+            {[...navLinksLeft, ...navLinksRight].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={cn(
-                  'text-lg font-bold transition-colors hover:text-primary py-2 px-2 rounded-md',
-                  pathname === link.href ? 'text-primary bg-muted' : 'text-muted-foreground'
-                )}
+                className="block px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider hover:bg-muted"
               >
                 {link.label}
               </Link>
             ))}
-            
-            <div className="border-t border-border my-2"></div>
-            
-            {loading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader className="animate-spin mx-auto w-6 h-6 text-muted-foreground" />
-                <span className="sr-only">Loading...</span>
-              </div>
-            ) : isAuthenticated ? (
-              <div className="space-y-2">
-                <Link href={getDashboardLink()} onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" size="sm" className="gap-2 w-full">
-                    <User className="w-4 h-4" />
-                    Dashboard
+
+            <div className="pt-4 border-t border-border">
+              {isAuthenticated ? (
+                <>
+                  <Link href={getDashboardLink()} onClick={() => setIsOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <LayoutDashboard className="mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-destructive"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Link href="/signin" onClick={() => setIsOpen(false)}>
+                  <Button variant="outline" className="w-full">
+                    Login
                   </Button>
                 </Link>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full" 
-                  onClick={() => {
-                    handleLogout();
-                    setIsOpen(false);
-                  }}
-                >
-                  Logout
-                </Button>
-              </div>
-            ) : (
-              <Link href="/signin" onClick={() => setIsOpen(false)}>
-                <Button variant="outline" size="sm" className="gap-2 w-full">
-                  <User className="w-4 h-4" />
-                  Login
-                </Button>
-              </Link>
-            )}
-            
-            <Link href="/packages" onClick={() => setIsOpen(false)}>
-              <Button className="bg-gradient-royal w-full">Explore Packages</Button>
-            </Link>
+              )}
+            </div>
           </div>
         )}
       </nav>

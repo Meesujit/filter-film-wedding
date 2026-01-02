@@ -2,15 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Menu, X, Home, Package, Calendar, Image, Users, LogOut, User, 
+  Menu, X, Home, Package, Calendar, Users, LogOut, User, 
   ChevronRight, Loader2, Globe, ClipboardCheck, 
-  User2Icon,
   UserSearch,
-  MailOpenIcon
+  MailOpenIcon,
+  ImageIcon
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/lib/firebase/auth-context';
+import Image from 'next/image';
 
 // Navigation items for different roles
 const navigationConfig = {
@@ -18,7 +19,7 @@ const navigationConfig = {
     { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { href: '/admin/packages', label: 'Manage Packages', icon: Package },
     { href: '/admin/bookings', label: 'Manage Bookings', icon: Calendar },
-    { href: '/admin/gallery', label: 'Manage Gallery', icon: Image },
+    { href: '/admin/gallery', label: 'Manage Gallery', icon: ImageIcon },
     { href: '/admin/team', label: 'Manage Team', icon: Users },
     { href: '/admin/customers', label: 'Customers', icon: UserSearch },
     { href: '/admin/attendance', label: 'Attendance', icon: ClipboardCheck },
@@ -120,13 +121,13 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
         {/* Logo Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0`}>
-              <span className="font-heading text-lg font-bold text-primary-foreground">F</span>
-            </div>
-            <div className="min-w-0">
-              <p className="text-lg font-bold text-gray-900 truncate">Filter Film Studio</p>
-              <p className="text-sm font-bold text-gray-500 truncate">{config.title}</p>
-            </div>
+            <Image
+              src="/logo/logo_only.png"
+              alt="Logo"
+              width={90}
+              height={32}
+              className=" w-full h-8"
+            />
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -211,38 +212,6 @@ const UnifiedDashboard: React.FC<UnifiedDashboardProps> = ({ children }) => {
           <div className="hidden lg:block">
             <h1 className="text-xl font-bold text-gray-900">{config.title}</h1>
           </div>
-
-          {/* Mobile title */}
-          <div className="lg:hidden flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full ${config.primaryClass} flex items-center justify-center`}>
-              <span className="font-bold text-sm text-white">
-                {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
-              </span>
-            </div>
-            <span className="font-semibold text-gray-900">{config.title}</span>
-          </div>
-
-          {/* User Info - Desktop */}
-          {/* <div className="hidden lg:flex items-center gap-4">
-            <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border">
-              <div className={`w-10 h-10 rounded-full ${config.primaryClass} flex items-center justify-center flex-shrink-0`}>
-                <span className="font-bold text-lg text-popover">
-                  {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
-                </span>
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-popover-foreground truncate">
-                  {user.name || 'User'}
-                </p>
-                <p className="text-xs text-popover-foreground truncate">
-                  {user.email}
-                </p>
-              </div>
-            </div>
-            <div className={`px-3 py-1 rounded-full ${config.bgClass} ${config.textClass} text-xs font-semibold capitalize`}>
-              {role}
-            </div>
-          </div> */}
 
           {/* Mobile spacer */}
           <div className="lg:hidden w-10" />

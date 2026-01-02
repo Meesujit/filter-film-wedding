@@ -8,16 +8,17 @@ import { AuthProvider } from "./lib/firebase/auth-context";
 import ToastProvider from "./src/components/providers/toast-provider";
 
 const playfair = Playfair_Display({
-  variable: "--font-heading",
   subsets: ["latin"],
-  display: "swap",
+  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
 });
 
 const cormorant = Cormorant_Garamond({
-  variable: "--font-body",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
+  variable: "--font-cormorant",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {

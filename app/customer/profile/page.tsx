@@ -6,6 +6,7 @@ import { useAuth } from '@/app/lib/firebase/auth-context';
 
 const CustomerProfile = () => {
   const { user } = useAuth();
+  console.log('Customer user data:', user);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -27,7 +28,7 @@ const CustomerProfile = () => {
             {user?.image ? (
               <Image
                 src={user.image}
-                alt={user.name || 'Admin'}
+                alt={user.name || 'Customer'}
                 fill
                 className="object-cover"
               />

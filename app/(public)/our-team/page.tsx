@@ -5,89 +5,94 @@ import { Instagram, Quote } from 'lucide-react';
 import Image from 'next/image';
 
 export default function OurTeam() {
-  // Founder data
   const founder = {
-    id: 1,
     name: "Subham Dalai",
     role: "Founder & Cinematographer",
     specialization: "Cinematic Wedding Filmmaker",
-    experience: "7+ Years",
-    bio: "With over 7 years of experience in the film industry, Subham founded Filter Film Studio with a vision to revolutionize wedding cinematography in India. His unique storytelling approach blends traditional Indian aesthetics with contemporary filmmaking techniques, creating timeless visual narratives that capture the essence of every celebration.",
+    experience: "7+ Years Experience",
+    bio: "With over 7 years of experience in the film industry, Subham founded Filter Film Studio with a vision to redefine wedding cinematography in India. His storytelling blends traditional Indian emotions with modern cinematic techniques, creating films that feel timeless, emotional, and deeply personal.",
     photo: "/team-image/founder1.png",
-    instagram: "@subhamdalai__/",
-    studio: "Filter Film Studio",
-    studio_instagram: "@filterfilm.studio",
+    instagram: "@subhamdalai__",
+    studioInstagram: "@filterfilm.studio",
   };
 
   return (
-    <section className="py-20 bg-gradient-elegant" id='team'>
-      <div className="container mx-auto px-2">
-        <div className="mb-16 lg:mb-12">
-          <SectionHeader
-            title="Meet Our Founder"
-            subtitle="Discover the visionary behind Filter Film Studio, Subham Dalai. With over 7 years of experience in cinematic wedding filmmaking."
-            centered
-          />
-        </div>
-        <div className="max-w-6xl mx-auto">
-          {/* Founder Profile */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-            <div className="relative">
-              <div className="relative h-[600px] rounded-2xl overflow-hidden shadow-card">
-                <Image
-                  src={founder.photo}
-                  alt={founder.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                  priority
-                />
-              </div>
+    <section
+      id="team"
+      className="relative py-24 lg:py-32 overflow-hidden"
+    >
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
+
+      <div className="relative container mx-auto px-4">
+        <SectionHeader
+          title="MEET THE FOUNDER"
+          subtitle="The creative mind behind Filter Film Studio and its cinematic storytelling."
+          centered
+        />
+
+        <div className="mt-20 grid lg:grid-cols-12 gap-12 items-center">
+          {/* Image */}
+          <div className="lg:col-span-5 relative">
+            <div className="relative h-[520px] overflow-hidden shadow-2xl">
+              <Image
+                src={founder.photo}
+                alt={founder.name}
+                fill
+                priority
+                className="object-cover scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 bg-gold/10 text-gold px-5 py-2 rounded-full text-sm font-semibold mb-6">
+              Founder • {founder.experience}
             </div>
 
-            <div>
-              <div className="inline-block bg-gold/10 text-gold px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                Founder & Visionary
-              </div>
-              <h2 className="font-bold text-4xl text-foreground mb-3">
-                {founder.name}
-              </h2>
-              <p className="text-gold text-xl font-bold mb-6">{founder.role}</p>
-              <p className="text-muted-foreground text-lg mb-6 font-bold">
-                {founder.specialization}
-              </p>
-              <p className="text-foreground text-lg font-bold leading-relaxed mb-6">
+            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-3">
+              {founder.name}
+            </h2>
+
+            <p className="text-gold text-xl font-semibold mb-2">
+              {founder.role}
+            </p>
+
+            <p className="text-muted-foreground text-lg mb-8">
+              {founder.specialization}
+            </p>
+
+            {/* Quote style bio */}
+            <div className="relative bg-muted/40 backdrop-blur rounded-2xl p-8 mb-8">
+              <Quote className="absolute -top-4 -left-4 w-10 h-10 text-gold/30" />
+              <p className="text-lg leading-relaxed font-medium text-foreground">
                 {founder.bio}
               </p>
-              <div className="mb-6 flex flex-wrap gap-4">
+            </div>
 
-                {founder.instagram && (
-                  <a
-                    href={`https://instagram.com/${founder.instagram.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold transition-colors group"
-                  >
-                    <div className="p-2 bg-gold/10 rounded-full group-hover:bg-gold/20 transition-colors flex flex-row items-center gap-2">
-                      <Instagram className="w-5 h-5" />
-                      <span className="font-medium">{founder.instagram}</span>
-                    </div>
-                  </a>
-                )}
-                {founder.instagram && (
-                  <a
-                    href={`https://instagram.com/${founder.instagram.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-muted-foreground hover:text-gold transition-colors group"
-                  >
-                    <div className="p-2 bg-gold/10 rounded-full group-hover:bg-gold/20 transition-colors flex flex-row items-center gap-2">
-                      <Instagram className="w-5 h-5" />
-                      <span className="font-medium">{founder.studio_instagram}</span>
-                    </div>
-                  </a>
-                )}
-              </div>
+            {/* Social Links */}
+            <div className="flex flex-wrap gap-4">
+              <a
+                href={`https://instagram.com/${founder.instagram.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-border hover:border-gold hover:text-gold transition-all"
+              >
+                <Instagram className="w-5 h-5" />
+                <span className="font-medium">{founder.instagram}</span>
+              </a>
+
+              <a
+                href={`https://instagram.com/${founder.studioInstagram.replace('@', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-5 py-3 rounded-full border border-border hover:border-gold hover:text-gold transition-all"
+              >
+                <Instagram className="w-5 h-5" />
+                <span className="font-medium">{founder.studioInstagram}</span>
+              </a>
             </div>
           </div>
         </div>
