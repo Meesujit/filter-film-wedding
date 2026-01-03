@@ -9,7 +9,7 @@ async function main() {
     );
 
     oauth2Client.setCredentials({
-        refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
+        refresh_token: process.env.GOOGLE_DRIVE_REFRESH_TOKEN,
     });
 
     const drive = google.drive({ version: "v3", auth: oauth2Client });
@@ -21,7 +21,7 @@ async function main() {
 
 main().catch((e) => {
     console.error("❌ keep-alive failed", e?.message || e);
-    console.log("REFRESH TOKEN PRESENT:", !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN);
+    console.log("REFRESH TOKEN PRESENT:", !!process.env.GOOGLE_DRIVE_REFRESH_TOKEN);
     console.log("CLIENT ID PRESENT:", !!process.env.AUTH_GOOGLE_ID);
     console.log("CLIENT SECRET PRESENT:", !!process.env.AUTH_GOOGLE_SECRET);
 
